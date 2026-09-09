@@ -1,0 +1,2749 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NeonSpace — Виробничий калькулятор</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
+<style>
+  :root{
+    --bg: #08080f;
+    --panel: #101018;
+    --panel-2: #14141f;
+    --line: #24243a;
+    --text: #eae9f5;
+    --muted: #8886a3;
+    --pink: #ff2f92;
+    --cyan: #29f1ff;
+    --amber: #ffb020;
+    --green: #38ffb0;
+    --red: #ff4d6a;
+    --radius: 14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse 900px 500px at 12% -10%, rgba(255,47,146,0.14), transparent 60%),
+      radial-gradient(ellipse 900px 600px at 100% 0%, rgba(41,241,255,0.12), transparent 55%),
+      var(--bg);
+    color: var(--text);
+    font-family: 'Manrope', -apple-system, sans-serif;
+    min-height: 100vh;
+    padding: 28px 16px 80px;
+  }
+  .wrap{ max-width: 1180px; margin: 0 auto; }
+
+  /* ===== Header / hero ===== */
+  .hero{
+    position: relative;
+    padding: 30px 26px 26px;
+    margin-bottom: 22px;
+    border-radius: var(--radius);
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent), var(--panel);
+    border: 1px solid var(--line);
+    overflow: hidden;
+  }
+  .hero::before{
+    content:"";
+    position:absolute; inset:0;
+    background-image: repeating-linear-gradient(90deg, rgba(255,255,255,0.025) 0 1px, transparent 1px 34px);
+    pointer-events:none;
+  }
+  .eyebrow{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: .18em;
+    color: var(--cyan);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  h1{
+    font-family:'Unbounded', sans-serif;
+    font-weight: 800;
+    font-size: clamp(24px, 4vw, 38px);
+    margin: 0 0 6px;
+    letter-spacing: -0.01em;
+    color:#fff;
+    text-shadow: 0 0 18px rgba(255,47,146,0.55), 0 0 44px rgba(41,241,255,0.18);
+  }
+  .sub{ color: var(--muted); font-size: 14px; max-width: 640px; }
+
+  .product-row{
+    display:flex; gap:14px; flex-wrap:wrap;
+  }
+  .product-row .field{ flex:1 1 220px; }
+
+  /* ===== Layout ===== */
+  .grid{
+    display:grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 20px;
+    align-items:start;
+  }
+  @media (max-width: 900px){ .grid{ grid-template-columns: 1fr; } }
+
+  .panel{
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 20px 20px 22px;
+    margin-bottom: 18px;
+  }
+  .panel h2{
+    font-family:'Unbounded', sans-serif;
+    font-size: 14px;
+    letter-spacing:.03em;
+    text-transform: uppercase;
+    margin: 0 0 4px;
+    color: var(--pink);
+    display:flex; align-items:center; gap:10px;
+  }
+  .panel h2 .n{
+    font-family:'JetBrains Mono',monospace;
+    font-size: 11px;
+    color: #08080f;
+    background: var(--pink);
+    border-radius: 6px;
+    padding: 2px 7px;
+  }
+  .panel .hint{ color: var(--muted); font-size: 12.5px; margin: 0 0 16px; line-height:1.5; }
+
+  .row{ display:flex; gap:12px; flex-wrap:wrap; margin-bottom: 12px; }
+  .row:last-child{ margin-bottom:0; }
+  .field{ flex: 1 1 150px; display:flex; flex-direction:column; gap:6px; }
+  .field.small{ flex: 0 1 110px; }
+  .field.xsmall{ flex: 0 1 84px; }
+  label{ font-size: 11.5px; color: var(--muted); font-weight:600; letter-spacing:.02em; }
+  label .val{ color: var(--cyan); font-weight: 700; }
+
+  input[type=text], input[type=number], select{
+    width:100%;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    color: var(--text);
+    border-radius: 9px;
+    padding: 10px 11px;
+    font-size: 14px;
+    font-family: 'Manrope', sans-serif;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  input[type=file]{
+    width:100%;
+    background: var(--panel-2);
+    border: 1px dashed var(--line);
+    color: var(--muted);
+    border-radius: 9px;
+    padding: 8px 11px;
+    font-size: 12px;
+    font-family: 'Manrope', sans-serif;
+    cursor:pointer;
+  }
+  input[type=file]::file-selector-button{
+    background: var(--panel-2); color: var(--cyan); border: 1px solid var(--line); border-radius:6px;
+    padding: 5px 9px; font-size:11.5px; font-family:'Manrope',sans-serif; font-weight:600; cursor:pointer; margin-right:8px;
+  }
+  input:focus, select:focus{
+    outline:none;
+    border-color: var(--cyan);
+    box-shadow: 0 0 0 3px rgba(41,241,255,0.14);
+  }
+  input.readonly{ background: var(--panel); color: var(--cyan); cursor:not-allowed; font-family:'JetBrains Mono',monospace; }
+  select{ appearance:none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238886a3'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position: right 12px center; padding-right: 30px; }
+
+  .toggle-group{ display:flex; border:1px solid var(--line); border-radius:9px; overflow:hidden; }
+  .toggle-group button{
+    flex:1; background: var(--panel-2); border:none; color: var(--muted);
+    padding: 10px 8px; font-size: 13px; font-weight:600; cursor:pointer; font-family:'Manrope',sans-serif;
+    transition: all .15s;
+  }
+  .toggle-group button.active{ background: var(--pink); color:#08080f; }
+  .toggle-group button + button{ border-left: 1px solid var(--line); }
+
+  .diffuser-row{
+    display:grid; grid-template-columns: 26px 1.4fr 1fr .8fr 70px; gap:10px; align-items:end; margin-bottom:10px;
+  }
+  .diffuser-row .idx{
+    width:26px; height:26px; border-radius:50%; background:var(--panel-2); border:1px solid var(--line);
+    display:flex; align-items:center; justify-content:center; font-size:11px; color:var(--cyan); font-family:'JetBrains Mono',monospace;
+    margin-bottom: 10px;
+  }
+  .diffuser-row .price-tag{
+    font-family:'JetBrains Mono',monospace; font-size:12.5px; color:var(--green); text-align:right; padding-bottom:10px;
+  }
+  @media (max-width:640px){ .diffuser-row{ grid-template-columns: 1fr; } .diffuser-row .idx{display:none;} .diffuser-row .price-tag{text-align:left;} }
+  @media (max-width:640px){ .product-row .field{ flex: 1 1 100% !important; } }
+
+  .checkline{
+    font-family:'JetBrains Mono',monospace; font-size: 12px; margin-top: 8px; padding: 8px 10px;
+    border-radius: 8px; display:flex; align-items:center; gap:8px;
+  }
+  .checkline.ok{ background: rgba(56,255,176,0.08); color: var(--green); border:1px solid rgba(56,255,176,0.25); }
+  .checkline.bad{ background: rgba(255,77,106,0.08); color: var(--red); border:1px solid rgba(255,77,106,0.3); }
+
+  .led-line{
+    display:flex; justify-content:space-between; align-items:center; gap:10px;
+    padding: 9px 0; border-bottom: 1px dashed var(--line); font-size: 13px;
+  }
+  .led-line:last-child{ border-bottom:none; }
+  .led-line .name{ color: var(--muted); }
+  .led-line .meta{ font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--cyan); }
+  .led-line .price{ font-family:'JetBrains Mono',monospace; color: var(--green); font-weight:600; }
+
+  .auto-note{
+    font-size: 11px; color: var(--muted); font-family:'JetBrains Mono',monospace;
+    background: var(--panel-2); border: 1px dashed var(--line); border-radius: 8px;
+    padding: 8px 10px; margin-top: 10px; line-height:1.5;
+  }
+  .auto-note b{ color: var(--cyan); font-weight:600; }
+
+  .checkbox-row{ display:flex; align-items:center; gap:10px; }
+  .checkbox-row input[type=checkbox]{
+    appearance: none;
+    -webkit-appearance: none;
+    width: 40px; height: 22px; flex: none;
+    border-radius: 999px;
+    background: #2a2a3d;
+    border: 1px solid var(--line);
+    position: relative;
+    cursor: pointer;
+    transition: background .18s ease, border-color .18s ease;
+  }
+  .checkbox-row input[type=checkbox]::before{
+    content: '';
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: #cfcfe0;
+    transition: transform .18s ease, background .18s ease;
+  }
+  .checkbox-row input[type=checkbox]:checked{
+    background: var(--pink);
+    border-color: var(--pink);
+  }
+  .checkbox-row input[type=checkbox]:checked::before{
+    transform: translateX(18px);
+    background: #fff;
+  }
+  .checkbox-row input[type=checkbox]:focus-visible{
+    outline: 2px solid var(--cyan);
+    outline-offset: 2px;
+  }
+  .checkbox-row label{ color: var(--text); font-weight:500; font-size:13px; cursor:pointer; }
+
+  /* ===== Mode selection card ===== */
+  .mode-choice-row{ display:flex; gap:16px; flex-wrap:wrap; margin-top:16px; }
+  .mode-choice-btn{
+    flex:1 1 240px; display:flex; flex-direction:column; align-items:center; gap:10px;
+    padding:26px 18px; border:1px solid var(--line); border-radius: var(--radius);
+    background: var(--panel-2); cursor:pointer; text-align:center;
+    font-family:inherit; font-weight:700; font-size:15px; color:var(--text);
+    transition: border-color .15s, transform .15s, background .15s;
+  }
+  .mode-choice-btn:hover{ border-color:var(--pink); transform:translateY(-2px); background:#191925; }
+  .mode-choice-icon{ font-size:30px; }
+  .mode-choice-sub{ font-weight:400; font-size:12px; color:var(--muted); }
+
+  .back-to-mode-btn{
+    display:inline-flex; align-items:center; gap:6px;
+    background:none; border:none; color:var(--muted); font-size:13px;
+    cursor:pointer; text-decoration:underline; padding:0; margin-bottom:16px;
+    font-family:inherit;
+  }
+  .back-to-mode-btn:hover{ color: var(--text); }
+
+  /* ===== Компактний ("швидкий") режим ручного розрахунку ===== */
+  .compact-toggle-bar{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    flex-wrap:wrap;
+    padding: 2px 4px 16px;
+    margin-bottom: 6px;
+    border-bottom: 1px solid var(--line);
+  }
+  .compact-toggle-label{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing:.06em; text-transform:uppercase; color: var(--muted);
+  }
+  .compact-toggle-btn{
+    background: var(--panel-2); border:1px solid var(--pink); color: var(--pink);
+    padding: 8px 14px; border-radius: 8px; font-size:12.5px; font-weight:700; cursor:pointer;
+    font-family:'Manrope',sans-serif; transition: all .15s; white-space: nowrap;
+  }
+  .compact-toggle-btn:hover{ background: rgba(255,47,146,0.12); }
+
+  #mainGrid.compact-mode #leftColumnCards{
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 4px 20px 20px;
+  }
+  #mainGrid.compact-mode #leftColumnCards .panel{
+    background: transparent; border:none; border-radius:0;
+    margin-bottom:0; padding:16px 0; border-bottom:1px dashed var(--line);
+  }
+  #mainGrid.compact-mode #panelMount{ border-bottom:none; padding-bottom:2px; }
+  #mainGrid.compact-mode .panel h2{ display:none; }
+  #mainGrid.compact-mode .diffuser-row{ grid-template-columns: 26px 1.4fr 1fr; }
+
+  #mainGrid.compact-mode #panelPsu,
+  #mainGrid.compact-mode #panelSealant,
+  #mainGrid.compact-mode #panelExtra,
+  #mainGrid.compact-mode #panelDimmer,
+  #mainGrid.compact-mode #panelCable,
+  #mainGrid.compact-mode #svgUploadRow,
+  #mainGrid.compact-mode #svgLengthNote,
+  #mainGrid.compact-mode #svgBreakdownRow,
+  #mainGrid.compact-mode #backlightSettings,
+  #mainGrid.compact-mode #materialMillingRow,
+  #mainGrid.compact-mode #millingModeRow,
+  #mainGrid.compact-mode #millingOutsourceRow,
+  #mainGrid.compact-mode #millingOwnCncRow,
+  #mainGrid.compact-mode #diffuserCheck,
+  #mainGrid.compact-mode #ledHeaderRow,
+  #mainGrid.compact-mode #ledBrandRow,
+  #mainGrid.compact-mode #ledLines,
+  #mainGrid.compact-mode #dimmerManualBlock,
+  #mainGrid.compact-mode #cableSizeField,
+  #mainGrid.compact-mode #cablePositionToggleRow,
+  #mainGrid.compact-mode #cablePositionRow,
+  #mainGrid.compact-mode .diffuser-extra,
+  #mainGrid.compact-mode .diffuser-adv,
+  #mainGrid.compact-mode .panel .hint,
+  #mainGrid.compact-mode .auto-note
+  { display:none !important; }
+
+  /* На вузьких екранах (телефон) розсіювач у компактному режимі теж переносимо
+     в один стовпчик, інакше "Колір" і "Ширина неону" налазять одне на одне. */
+  @media (max-width:640px){
+    #mainGrid.compact-mode .diffuser-row{ grid-template-columns: 1fr; }
+  }
+
+  /* ===== Summary panel ===== */
+  .summary-wrap{
+    position: sticky; top: 18px;
+  }
+  .summary{
+    background: var(--panel);
+    border: 1px solid transparent;
+    border-radius: var(--radius);
+    padding: 20px;
+    isolation: isolate;
+  }
+  .summary::before{
+    content:"";
+    position:absolute; inset:-1px;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(120deg, var(--pink), var(--cyan), var(--green), var(--amber), var(--pink));
+    background-size: 300% 300%;
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    animation: shimmerBorder 6s ease infinite;
+    z-index: -1;
+    pointer-events: none;
+  }
+  @keyframes shimmerBorder{
+    0%{ background-position: 0% 50%; }
+    50%{ background-position: 100% 50%; }
+    100%{ background-position: 0% 50%; }
+  }
+  .summary h2{
+    font-family:'Unbounded', sans-serif; font-size:14px; text-transform:uppercase; letter-spacing:.03em;
+    color: var(--cyan); margin: 0 0 14px;
+  }
+
+  .info-card{
+    background: var(--panel-2); border:1px solid var(--line); border-radius: 10px;
+    padding: 9px 12px; margin-bottom: 10px;
+  }
+  .info-row{ display:flex; gap:10px; flex-wrap:wrap; }
+  .info-row + .info-row{ margin-top:5px; padding-top:5px; border-top:1px dashed var(--line); }
+  .info-item{ flex:1 1 auto; min-width:0; }
+  .info-item.name-item{ flex:1.8 1 auto; }
+  .info-item.compact{ flex:0 1 auto; min-width:64px; text-align:right; }
+  .info-item .k{ font-size:10px; color: var(--muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:1px; }
+  .info-item .v{ font-family:'JetBrains Mono',monospace; font-size:12.5px; color:#fff; font-weight:600; overflow-wrap:break-word; }
+
+  .sum-line{
+    display:flex; flex-direction:column; gap:1px; font-size: 12.5px; padding: 5px 0;
+    border-bottom: 1px solid var(--line); color: var(--text);
+  }
+  .sum-line .head{ display:flex; justify-content:space-between; align-items:baseline; gap:8px; }
+  .sum-line .label{ color: var(--text); font-weight:600; }
+  .sum-line .amt{ font-family:'JetBrains Mono',monospace; font-weight:600; white-space:nowrap; color: var(--cyan); }
+  .sum-line.zero .amt{ color: var(--muted); }
+  .sum-line.zero .label{ color: var(--muted); font-weight:500; }
+  .sum-line .detail{ font-size: 11px; color: var(--muted); font-family:'JetBrains Mono',monospace; line-height:1.35; }
+
+  .price-list{ margin-top: 10px; display:flex; flex-direction:column; gap:5px; }
+  .price-row{
+    display:flex; justify-content:space-between; align-items:center; gap:10px;
+    background: var(--panel-2); border:1px solid var(--line); border-radius:9px;
+    padding: 7px 11px;
+  }
+  .required-mark{ color:#ff5c5c; font-weight:700; }
+  .input-error{ border-color:#ff5c5c !important; box-shadow: 0 0 0 1px #ff5c5c; }
+  .reveal-btn{
+    margin-top:2px; width:100%; background: var(--panel-2); border:1px solid rgba(56,255,176,0.4); color: var(--green);
+    padding:11px; border-radius:9px; font-size:13px; cursor:pointer; font-family:'Manrope',sans-serif; font-weight:700;
+    transition: all .15s; display:flex; align-items:center; justify-content:center; gap:8px;
+  }
+  .reveal-btn:hover{ background: rgba(56,255,176,0.12); border-color: var(--green); }
+  .reveal-btn.invalid:hover{ background: rgba(255,92,92,0.14); border-color:#ff5c5c; color:#ff5c5c; }
+  .reveal-btn svg{ width:15px; height:15px; flex:none; }
+  .price-row.make{ border-color: rgba(41,241,255,0.4); }
+  .price-row.main{ border-color: rgba(255,47,146,0.4); }
+  .price-row.client{ border-color: rgba(56,255,176,0.4); margin-top:8px; }
+  .price-row.d5{ border-color: rgba(255,176,32,0.4); margin-top:8px; }
+  .price-row.d10{ border-color: rgba(196,120,0,0.5); }
+  .price-row .plbl{ font-size:12.5px; color: var(--text); font-weight:600; }
+  .price-row .pval{ font-family:'JetBrains Mono',monospace; font-size:13px; color: var(--cyan); font-weight:700; white-space:nowrap; }
+  .price-row.make .pval{ color: var(--cyan); }
+  .price-row.main .pval{ color: var(--pink); }
+  .price-row.client .pval{ color: var(--green); }
+  .price-row.d5 .pval{ color: var(--amber); }
+  .price-row.d10 .pval{ color: #c47800; }
+
+  .reset-btn{
+    margin-top:14px; width:100%; background: var(--panel-2); border:1px solid var(--line); color: var(--muted);
+    padding:10px; border-radius:9px; font-size:12.5px; cursor:pointer; font-family:'Manrope',sans-serif; font-weight:600;
+    transition: all .15s;
+  }
+  .reset-btn:hover{ border-color: var(--pink); color: var(--pink); }
+
+  .screenshot-btn{
+    margin-top:14px; width:100%; background: var(--panel-2); border:1px solid var(--line); color: var(--muted);
+    padding:10px; border-radius:9px; font-size:12.5px; cursor:pointer; font-family:'Manrope',sans-serif; font-weight:600;
+    transition: all .15s; display:flex; align-items:center; justify-content:center; gap:8px;
+  }
+  .screenshot-btn:hover{ border-color: var(--cyan); color: var(--cyan); }
+  .screenshot-btn:disabled{ opacity:.55; cursor:default; }
+  .screenshot-btn svg{ width:15px; height:15px; flex:none; }
+
+  .send-btn{
+    margin-top:14px; width:100%; background: var(--panel-2); border:1px solid var(--line); color: var(--muted);
+    padding:10px; border-radius:9px; font-size:12.5px; cursor:pointer; font-family:'Manrope',sans-serif; font-weight:600;
+    transition: all .15s; display:flex; align-items:center; justify-content:center; gap:8px;
+  }
+  .send-btn:hover{ border-color: var(--pink); color: var(--pink); }
+  .send-btn:disabled{ opacity:.6; cursor:default; }
+  .send-btn svg{ width:15px; height:15px; flex:none; }
+  .send-status{ text-align:center; font-size:11.5px; margin-top:8px; font-family:'JetBrains Mono',monospace; min-height:14px; }
+  .send-status.ok{ color: var(--green); }
+  .send-status.err{ color: #ff5c5c; }
+
+  footer{ text-align:center; color: var(--muted); font-size: 11.5px; margin-top: 26px; font-family:'JetBrains Mono',monospace; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="eyebrow">NeonSpace · Виробництво</div>
+    <h1>Виробничий калькулятор неонових вивісок</h1>
+    <div class="mode-choice-row" id="heroModeChoice" style="margin-top:18px;">
+      <label class="mode-choice-btn" for="svgFileInputMode">
+        <span class="mode-choice-icon">📁</span>
+        <span>Завантажити SVG-файл</span>
+        <span class="mode-choice-sub">Автоматичний розрахунок</span>
+      </label>
+      <input type="file" accept=".svg,image/svg+xml" id="svgFileInputMode" style="display:none;">
+      <button type="button" class="mode-choice-btn" id="manualModeBtn">
+        <span class="mode-choice-icon">✍️</span>
+        <span>Рахувати вручну</span>
+        <span class="mode-choice-sub">Всі параметри самостійно</span>
+      </button>
+    </div>
+  </div>
+
+  <div id="mainContent" style="display:none;">
+  <button type="button" class="back-to-mode-btn" id="backToModeBtn">← Змінити спосіб розрахунку</button>
+
+  <div class="grid" id="mainGrid">
+    <!-- LEFT COLUMN: inputs -->
+    <div class="left-col" id="leftColumnCards">
+
+      <div class="compact-toggle-bar">
+        <span class="compact-toggle-label" id="compactToggleLabel">Швидке заповнення — основні поля</span>
+        <button type="button" class="compact-toggle-btn" id="compactToggleBtn">Розгорнути повністю ↓</button>
+      </div>
+
+      <div class="panel">
+        <h2><span class="n">00</span> Основні дані</h2>
+        <div class="row" style="margin-bottom:4px;" id="svgUploadRow">
+          <div class="field">
+            <label>SVG файл макету <span class="val">(авто-довжина, опційно)</span></label>
+            <input type="file" accept=".svg,image/svg+xml" id="svgFileInput">
+          </div>
+        </div>
+        <div class="auto-note" id="svgLengthNote" style="display:none; margin-bottom:12px;"></div>
+        <div class="row" id="svgBreakdownRow" style="display:none;">
+          <div class="field">
+            <label>Периметр (з SVG), м <span class="val">(перевірте)</span></label>
+            <input type="text" inputmode="decimal" id="svgPerimeterOut" value="0">
+          </div>
+          <div class="field">
+            <label>Кружечки/отвори (з SVG), м <span class="val">(перевірте)</span></label>
+            <input type="text" inputmode="decimal" id="svgCirclesOut" value="0">
+          </div>
+          <div class="field">
+            <label>Літери (з SVG), м <span class="val">(перевірте)</span></label>
+            <input type="text" inputmode="decimal" id="svgLettersOut" value="0">
+          </div>
+          <div class="field">
+            <label>Загалом, м <span class="val">(авто)</span></label>
+            <input type="text" class="readonly" id="svgTotalOut" value="0" readonly>
+          </div>
+        </div>
+        <div class="product-row">
+          <div class="field">
+            <label>Назва виробу <span class="required-mark">*</span></label>
+            <input type="text" id="productName" value="">
+          </div>
+          <div class="field xsmall">
+            <label>Ширина, см</label>
+            <input type="text" inputmode="decimal" id="widthCm" value="" placeholder="Ширину">
+          </div>
+          <div class="field xsmall">
+            <label>Висота, см</label>
+            <input type="text" inputmode="decimal" id="heightCm" value="" placeholder="Висоту">
+          </div>
+          <div class="field small">
+            <label>Тип монтажу</label>
+            <div class="toggle-group" id="mountToggle">
+              <button data-val="Внутрішній" class="active">Внутрішній</button>
+              <button data-val="Зовнішній">Зовнішній</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Контражур -->
+      <div class="panel">
+        <h2><span class="n">01</span> Контражур</h2>
+        <div class="row" style="margin-bottom:14px;">
+          <div class="field">
+            <div class="toggle-group" id="backlightToggle">
+              <button data-val="off" class="active">Неонова вивіска</button>
+              <button data-val="on">КОНТРАЖУР</button>
+            </div>
+          </div>
+        </div>
+        <div id="backlightSettings" style="display:none;">
+          <div class="row">
+            <div class="field">
+              <label>Форма контражура <span class="val">(лише для ручного розрахунку, без SVG)</span></label>
+              <div class="toggle-group" id="backlightShapeToggle">
+                <button data-val="Коло" class="active">Коло</button>
+                <button data-val="Довільна">Довільна</button>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="field">
+              <label>Матеріал контражура</label>
+              <select id="backlightMaterial">
+                <option value="Плівка">Плівка</option>
+                <option value="Акрил Чорний">Акрил Чорний</option>
+                <option value="Акрил Золото">Акрил Золото</option>
+                <option value="Акрил Срібло">Акрил Срібло</option>
+              </select>
+              <label style="margin-top:6px;">Ціна за м², грн</label>
+              <input type="text" inputmode="decimal" id="backlightPriceInput" value="600">
+            </div>
+            <div class="field">
+              <label>Контражур, м² <span class="val">(авто)</span></label>
+              <input type="text" class="readonly" id="backlightArea" value="0" readonly>
+              <div class="auto-note" id="backlightAreaNote"></div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="field">
+              <label>Довжина неону контражура, м/п <span class="val">(авто, периметр основи)</span></label>
+              <input type="text" class="readonly" id="backlightNeonLength" value="0" readonly>
+              <div class="auto-note" id="backlightNeonLengthNote"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Матеріал / фрезерування / збірка -->
+      <div class="panel">
+        <h2><span class="n">02</span> Матеріал, фрезерування, збірка</h2>
+        <p class="hint">Матеріал і фрезерування рахуються автоматично за розмірами (Ш×В) і загальною довжиною неону. Збірка — вручну, ціна за елемент залежить від типу монтажу.</p>
+        <div class="row" id="materialMillingRow">
+          <div class="field">
+            <label>Матеріал — акрил 5мм, м² <span class="val">(авто)</span></label>
+            <input type="text" class="readonly" id="materialArea" value="0" readonly>
+            <div class="auto-note" id="materialPriceNote"></div>
+            <label style="margin-top:6px;">Ціна за м², грн</label>
+            <input type="text" inputmode="decimal" id="materialPriceInput" value="1900">
+          </div>
+          <div class="field">
+            <label>Фрезерування, м/п <span class="val">(авто)</span></label>
+            <input type="text" class="readonly" id="millingLength" value="0" readonly>
+            <div class="auto-note" id="millingPriceNote"></div>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:14px;" id="millingModeRow">
+          <div class="field">
+            <label>Спосіб фрезерування</label>
+            <div class="toggle-group" id="millingModeToggle">
+              <button data-val="Аутсорс" class="active">Аутсорс</button>
+              <button data-val="Свій ЧПУ">Свій ЧПУ</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="row" id="millingOutsourceRow" style="margin-top:10px;">
+          <div class="field">
+            <label>Ціна фрезерування (аутсорс), грн <span class="val">(авто за площею, можна змінити)</span></label>
+            <input type="text" inputmode="decimal" id="millingOutsourcePriceInput" value="300">
+            <div class="auto-note" id="millingOutsourceNote"></div>
+          </div>
+        </div>
+
+        <div class="row" id="millingOwnCncRow" style="margin-top:10px; display:none;">
+          <div class="field">
+            <label>Ціна за м/п (свій ЧПУ), грн</label>
+            <input type="text" inputmode="decimal" id="millingPriceInput" value="25">
+          </div>
+        </div>
+
+        <div class="row" style="margin-bottom:4px; margin-top:14px;">
+          <div class="field">
+            <label>Загальна довжина неону, м/п</label>
+            <input type="text" inputmode="decimal" id="totalLength" value="" placeholder="Довжину">
+          </div>
+        </div>
+        <div id="svgHiddenHolder" style="position:fixed; left:-99999px; top:-99999px; width:0; height:0; overflow:hidden;"></div>
+        <div class="row">
+          <div class="field">
+            <label>Збірка (пайка), елементів</label>
+            <input type="text" inputmode="decimal" id="assemblyCount" value="" placeholder="Кількість">
+          </div>
+        </div>
+        <div class="auto-note" id="assemblyNote"></div>
+      </div>
+
+      <!-- Неон (розсіювач + LED-стрічка) -->
+      <div class="panel">
+        <h2><span class="n">03</span> Неон</h2>
+        <p class="hint">До 3 рядків розсіювача: колір автоматично встановлює колір відповідної LED-стрічки. Сума довжин має дорівнювати загальній довжині неону. Тип LED-стрічки за замовчуванням визначається монтажем (Зовнішній → IP67), ціна залежить від вольтажу системи (розділ «Блок живлення»); тип можна перевибрати вручну. Бренд ціни LED (NeoNovi/ProLum) за замовчуванням — авто: рахуємо по NN, а якщо для цього типу немає ціни NN — автоматично беремо PL; бренд можна також обрати вручну.</p>
+
+        <div class="row" style="margin-bottom:4px;">
+          <div class="field">
+            <label>Розсіювач</label>
+          </div>
+        </div>
+
+        <div id="diffuserRows"></div>
+        <div id="diffuserCheck"></div>
+
+        <div class="row" style="margin-bottom:4px; margin-top:14px;" id="ledHeaderRow">
+          <div class="field">
+            <label>LED-стрічка</label>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:4px;" id="ledBrandRow">
+          <div id="ledOverrides" style="display:contents;"></div>
+          <div class="field small">
+            <label>Бренд LED-стрічки</label>
+            <select id="ledBrand">
+              <option value="Авто">Авто (NN → PL)</option>
+              <option value="NN">NN — NeoNovi</option>
+              <option value="PL">PL — ProLum</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="ledLines"></div>
+      </div>
+
+      <!-- Блок живлення -->
+      <div class="panel" id="panelPsu">
+        <h2><span class="n">04</span> Блок живлення</h2>
+        <p class="hint">Вольтаж системи впливає на ціну LED-стрічки і струм для димера. При довжині неону понад 8 м/п система і БЖ автоматично переходять на 24В. Вольтаж БЖ завжди дорівнює вольтажу системи. Потужність БЖ підбирається автоматично (запас 20%) — обирається найменший блок, що покриває потребу: спочатку серед NeoNovi (NN), якщо немає — серед ProLum (PL), обидва в обраному типі корпуса. Якщо і там нічого не підходить — підбирається найближчий за потужністю варіант серед іншого типу корпуса (Пластик/Метал/IP67) на тому ж вольтажі. Бренд можна також зафіксувати вручну.</p>
+        <div class="row">
+          <div class="field small">
+            <label>Вольтаж системи, В</label>
+            <select id="systemVoltage">
+              <option value="5">5</option>
+              <option value="12">12</option>
+              <option value="24">24</option>
+            </select>
+          </div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>Тип корпусу БЖ</label>
+            <select id="psuType">
+              <option>Пластик</option>
+              <option>Метал</option>
+              <option>IP67</option>
+            </select>
+          </div>
+          <div class="field small">
+            <label>Вольтаж БЖ, В</label>
+            <select id="psuVoltage">
+              <option value="5">5</option>
+              <option value="12">12</option>
+              <option value="24">24</option>
+            </select>
+          </div>
+        </div>
+        <div class="row">
+          <div class="field small">
+            <label>Бренд БЖ</label>
+            <select id="psuBrand">
+              <option value="Авто">Авто (NN → PL)</option>
+              <option value="NN">NN — NeoNovi</option>
+              <option value="PL">PL — ProLum</option>
+            </select>
+          </div>
+        </div>
+        <div class="checkbox-row" style="margin-top:2px;">
+          <input type="checkbox" id="psuManual">
+          <label for="psuManual">Перевибрати потужність вручну</label>
+        </div>
+        <div class="row" id="psuManualRow" style="display:none; margin-top:10px;">
+          <div class="field">
+            <label>Потужність БЖ, W</label>
+            <select id="psuWattageSelect"></select>
+          </div>
+        </div>
+        <div class="auto-note" id="psuAutoNote"></div>
+      </div>
+
+      <!-- Димер -->
+      <div class="panel" id="panelDimmer">
+        <h2><span class="n">05</span> Димер</h2>
+        <div class="checkbox-row" style="margin-bottom:12px;">
+          <input type="checkbox" id="dimmerEnabled">
+          <label for="dimmerEnabled">Додати димер</label>
+        </div>
+        <div id="dimmerManualBlock" style="display:none;">
+          <div class="checkbox-row" style="margin-bottom:2px;">
+            <input type="checkbox" id="dimmerManual">
+            <label for="dimmerManual">Обрати тип вручну</label>
+          </div>
+          <div class="row" id="dimmerManualRow" style="display:none; margin-top:10px;">
+            <div class="field">
+              <label>Тип димера</label>
+              <select id="dimmerManualSelect"></select>
+            </div>
+          </div>
+        </div>
+        <div class="auto-note" id="dimmerNote"></div>
+      </div>
+
+      <!-- Кабель -->
+      <div class="panel" id="panelCable">
+        <h2><span class="n">06</span> Кабель живлення</h2>
+        <div class="row">
+          <div class="field">
+            <label>Тип</label>
+            <select id="cableType">
+              <option value="">Оберіть тип кабелю</option>
+              <option value="З роз'ємом">З роз'ємом</option>
+              <option value="Відрізок">Відрізок (10м)</option>
+              <option value="USB">USB</option>
+            </select>
+          </div>
+          <div class="field" id="cableSizeField">
+            <label>Розмір / варіант</label>
+            <select id="cableSize"></select>
+          </div>
+        </div>
+        <div class="checkbox-row" style="margin-top:2px;" id="cablePositionToggleRow">
+          <input type="checkbox" id="cablePositionActive">
+          <label for="cablePositionActive">Обрати розташування</label>
+        </div>
+        <div class="row" id="cablePositionRow" style="display:none; margin-top:10px;">
+          <div class="field">
+            <label>Розташування виводу кабелю</label>
+            <select id="cablePosition">
+              <option value="Зверху по центру">Зверху по центру</option>
+              <option value="Знизу по центру">Знизу по центру</option>
+              <option value="Зліва по центру">Зліва по центру</option>
+              <option value="З права по центру">З права по центру</option>
+              <option value="Зверху з права">Зверху з права</option>
+              <option value="Зверху з ліва">Зверху з ліва</option>
+              <option value="Знизу з ліва">Знизу з ліва</option>
+              <option value="Знизу з права">Знизу з права</option>
+              <option value="Зліва зверху">Зліва зверху</option>
+              <option value="Зліва з знизу">Зліва з знизу</option>
+              <option value="З права зверху">З права зверху</option>
+              <option value="З права знизу">З права знизу</option>
+            </select>
+          </div>
+        </div>
+        <div class="auto-note" id="cableNote"></div>
+      </div>
+
+      <!-- Кріплення -->
+      <div class="panel" id="panelMount">
+        <h2><span class="n">07</span> Кріплення</h2>
+        <div class="row">
+          <div class="field">
+            <label>Тип кріплення <span class="required-mark">*</span></label>
+            <select id="mountHwType">
+              <option value="">Оберіть тип кріплення</option>
+              <option>Дистанційне</option>
+              <option>Ліска</option>
+              <option>Присоска</option>
+              <option>Трос</option>
+              <option>Підставка акрил</option>
+            </select>
+          </div>
+          <div class="field small" id="mountHwQtyField">
+            <label id="mountHwQtyLabel">Кількість</label>
+            <input type="text" inputmode="decimal" id="mountHwQty" value="" placeholder="Кількість">
+          </div>
+          <div class="field xsmall" id="mountHwWidthField" style="display:none;">
+            <label>Ширина, см</label>
+            <input type="text" inputmode="decimal" id="mountHwWidth" value="" placeholder="Ширину">
+          </div>
+          <div class="field xsmall" id="mountHwHeightField" style="display:none;">
+            <label>Висота, см</label>
+            <input type="text" inputmode="decimal" id="mountHwHeight" value="" placeholder="Висоту">
+          </div>
+        </div>
+        <div class="auto-note" id="mountHwNote"></div>
+      </div>
+
+      <!-- Герметик -->
+      <div class="panel" id="panelSealant">
+        <h2><span class="n">08</span> Герметик</h2>
+        <p class="hint">Розраховується автоматично за розмірами розсіювача. Застосовується лише при зовнішньому монтажі.</p>
+        <div class="auto-note" id="sealantNote"></div>
+      </div>
+
+      <!-- Додаткові витрати -->
+      <div class="panel" id="panelExtra">
+        <h2><span class="n">09</span> Додаткові витрати</h2>
+        <div class="checkbox-row" style="margin-bottom:2px;">
+          <input type="checkbox" id="extraEngravingActive">
+          <label for="extraEngravingActive">Гравіювання</label>
+        </div>
+        <div class="row" id="extraEngravingRow" style="display:none; margin-top:6px; margin-bottom:12px;">
+          <div class="field">
+            <label>Ціна, грн</label>
+            <input type="text" inputmode="decimal" id="extraEngravingPrice" value="" placeholder="Вкажіть ціну">
+          </div>
+        </div>
+
+        <div class="checkbox-row" style="margin-bottom:2px;">
+          <input type="checkbox" id="extraStickerActive">
+          <label for="extraStickerActive">Наліпка</label>
+        </div>
+        <div class="row" id="extraStickerRow" style="display:none; margin-top:6px; margin-bottom:12px;">
+          <div class="field">
+            <label>Ціна, грн</label>
+            <input type="text" inputmode="decimal" id="extraStickerPrice" value="" placeholder="Вкажіть ціну">
+          </div>
+        </div>
+
+        <div class="checkbox-row" style="margin-bottom:2px;">
+          <input type="checkbox" id="extraOtherActive">
+          <label for="extraOtherActive">Інше</label>
+        </div>
+        <div class="row" id="extraOtherRow" style="display:none; margin-top:6px;">
+          <div class="field">
+            <label>Опис</label>
+            <input type="text" id="extraOtherLabel" value="" placeholder="Опишіть словами">
+          </div>
+          <div class="field small">
+            <label>Ціна, грн</label>
+            <input type="text" inputmode="decimal" id="extraOtherPrice" value="" placeholder="Вкажіть ціну">
+          </div>
+        </div>
+        <div class="auto-note" id="extraCostsNote"></div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT COLUMN: summary -->
+    <div class="summary-wrap">
+      <div class="summary" id="summaryPanel">
+        <h2>Розрахунок вартості</h2>
+
+        <div class="info-card" id="infoCard">
+          <div class="info-row">
+            <div class="info-item name-item"><div class="k">Назва</div><div class="v" id="infoName">—</div></div>
+            <div class="info-item compact"><div class="k">Розмір</div><div class="v" id="infoSize">0×0 см</div></div>
+            <div class="info-item compact"><div class="k">Площа, м²</div><div class="v" id="infoAreaMm">0</div></div>
+          </div>
+          <div class="info-row">
+            <div class="info-item name-item"><div class="k">Монтаж</div><div class="v" id="infoMount">—</div></div>
+            <div class="info-item compact" id="infoBacklightField" style="display:none;"><div class="k">Тип</div><div class="v" id="infoBacklight">Контражур</div></div>
+            <div class="info-item compact"><div class="k">Довжина неону</div><div class="v" id="infoLength">0 м/п</div></div>
+          </div>
+          <div class="info-row">
+            <div class="info-item"><div class="k">Спосіб розрахунку</div><div class="v" id="infoCalcSource">—</div></div>
+          </div>
+        </div>
+
+        <div id="sumLines"></div>
+
+        <div class="price-list">
+          <div class="price-row make"><span class="plbl">Вартість виготовлення</span><span class="pval" id="totalPrice">0 грн</span></div>
+          <button class="reveal-btn" id="revealBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+            Рекомендована ціна
+          </button>
+          <div class="price-row main"><span class="plbl">Повна собівартість виробу</span><span class="pval" id="fullCostPrice">0 грн</span></div>
+          <div class="price-row client"><span class="plbl">Рекомендована ціна для клієнта</span><span class="pval" id="priceClient">0 грн</span></div>
+          <div class="price-row d5"><span class="plbl">Зі знижкою 5%</span><span class="pval" id="priceD5">0 грн</span></div>
+          <div class="price-row d10"><span class="plbl">Зі знижкою 10%</span><span class="pval" id="priceD10">0 грн</span></div>
+        </div>
+      </div>
+      <button class="screenshot-btn" id="screenshotBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+        Зберегти скріншот
+      </button>
+      <button class="send-btn" id="sendBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+        Відправити заявку
+      </button>
+      <button class="reset-btn" id="resetBtn">Скинути все</button>
+      <div class="send-status" id="sendStatus"></div>
+    </div>
+  </div>
+
+  </div>
+  <!-- /mainContent -->
+
+  <footer>NeonSpace · Виробничий калькулятор · логіка розрахунку відтворює формули Робоча_таблиця_NeonSpace_13_08_26__19_00.xlsx</footer>
+</div>
+
+<script>
+/* ============ ВИБІР РЕЖИМУ: файл vs вручну (ПІДКЛЮЧАЄТЬСЯ ПЕРШИМ, до будь-якого іншого коду) ============ */
+/* Це навмисно винесено на самий початок і обгорнуто в try/catch: якщо будь-де далі в скрипті
+   станеться помилка (наприклад через особливості конкретного мобільного браузера), кнопки
+   перемикання режиму розрахунку все одно гарантовано працюватимуть. */
+(function initModeSwitchEarly(){
+  try {
+    var heroModeChoice = document.getElementById('heroModeChoice');
+    var mainContent = document.getElementById('mainContent');
+    var manualModeBtn = document.getElementById('manualModeBtn');
+    var backToModeBtn = document.getElementById('backToModeBtn');
+
+    function enterManualModeEarly(){
+      if(heroModeChoice) heroModeChoice.style.display = 'none';
+      if(mainContent) mainContent.style.display = 'block';
+      window.__calcState = window.__calcState || {};
+      window.__calcState.calcSource = 'Вручну';
+    }
+
+    if(manualModeBtn){
+      manualModeBtn.addEventListener('click', function(){
+        enterManualModeEarly();
+        // Якщо основний скрипт нижче завантажився успішно, він сам викличе повний render().
+        // Якщо ж основний скрипт впав з помилкою раніше — форма все одно відкриється,
+        // просто без автопідрахунку (це видно одразу і краще, ніж "кнопка взагалі не працює").
+        if(typeof window.__fullRenderReady === 'function'){
+          try{ window.__fullRenderReady(); }catch(e){}
+        }
+      });
+    }
+
+    if(backToModeBtn){
+      backToModeBtn.addEventListener('click', function(){
+        if(mainContent) mainContent.style.display = 'none';
+        if(heroModeChoice) heroModeChoice.style.display = 'flex';
+      });
+    }
+  } catch(earlyErr){
+    console.error('Помилка ранньої ініціалізації кнопок режиму:', earlyErr);
+  }
+})();
+
+/* ============ ВІДПРАВКА ЗАЯВОК У GOOGLE ТАБЛИЦЮ ============ */
+// Встав сюди URL веб-застосунку Google Apps Script (Deploy → Web app → Copy URL)
+const SHEET_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyZGvVaKkox90rmQ1jyWrI92cyyBaPxJ9rgiyWZ56XwLL8lLpNB6Zk58LfSmP89gzMC/exec';
+
+/* ============ ДОВІДКОВІ ТАБЛИЦІ (Блок C з Excel) ============ */
+
+const LED_POWER_PER_M = 8; // Вт на 1 м/п
+let MATERIAL_PRICE_5MM = 1900; // грн за м² (редаговано користувачем)
+let MILLING_PRICE = 25; // грн за м/п (редаговано користувачем, тариф "Свій ЧПУ")
+
+// Тарифи фрезерування "Аутсорс" — за площею акрилу (Ш×В), м²
+function outsourceMillingTierPrice(areaM2){
+  if(areaM2 <= 0.5) return 300;
+  if(areaM2 <= 1.1) return 500;
+  return 700;
+}
+const ASSEMBLY_PRICE = {'Внутрішній':35, 'Зовнішній':50}; // грн за елемент
+
+const DIFFUSER_SIZES = ['6мм','8мм','12мм'];
+const DIFFUSER_PRICE = {'6мм':35, '8мм':47, '12мм':65};
+
+// Контражур: ціна за м² залежно від обраного матеріалу
+const BACKLIGHT_PRICES = {'Плівка':600, 'Акрил Чорний':2300, 'Акрил Золото':3500, 'Акрил Срібло':2700};
+
+const LED_COLORS = ['Холодний білий','Нейтральний білий','Теплий білий','Лимонний жовтий','Жовтий','Помаранчевий','Червоний','Рожевий','Фіолетовий','Зелений','Бірюзовий','Синій'];
+const LED_TYPES = ['Звичайна','Покращена','IP67','RGB','RGBW'];
+// матриця: тип -> вольтаж -> {NN, PL} ціна за м/п (бренд NeoNovi / ProLum)
+const LED_PRICE = {
+  "Звичайна": {
+    5: {NN:40, PL:33},
+    12: {NN:32, PL:null},
+    24: {NN:42, PL:null},
+  },
+  "Покращена": {
+    5: {NN:null, PL:null},
+    12: {NN:44, PL:26},
+    24: {NN:null, PL:null},
+  },
+  "IP67": {
+    5: {NN:null, PL:null},
+    12: {NN:69, PL:null},
+    24: {NN:69, PL:null},
+  },
+  "RGB": {
+    5: {NN:null, PL:null},
+    12: {NN:120, PL:null},
+    24: {NN:null, PL:null},
+  },
+  "RGBW": {
+    5: {NN:null, PL:null},
+    12: {NN:256, PL:null},
+    24: {NN:null, PL:null},
+  },
+};
+
+const PSU_TYPES = ['Пластик','Метал','IP67'];
+// psuTable[тип][вольтаж БЖ][потужність] = {NN, PL} ціна (бренд NeoNovi / ProLum)
+const PSU_TABLE = {
+  "Пластик": {
+    12: {
+      24: {NN:117, PL:106},
+      36: {NN:196, PL:142},
+      48: {NN:227, PL:214},
+      60: {NN:233, PL:218},
+      72: {NN:284, PL:273},
+      84: {NN:297, PL:null},
+      96: {NN:462, PL:290},
+      120: {NN:603, PL:553},
+      150: {NN:null, PL:737},
+    },
+    24: {
+      24: {NN:null, PL:408},
+      36: {NN:216, PL:null},
+      60: {NN:null, PL:256},
+      96: {NN:null, PL:357},
+    },
+    5: {},
+  },
+  "Метал": {
+    12: {
+      60: {NN:null, PL:152},
+      72: {NN:285, PL:null},
+      100: {NN:297, PL:348},
+      120: {NN:352, PL:364},
+      150: {NN:361, PL:467},
+      180: {NN:500, PL:null},
+      200: {NN:440, PL:612},
+      250: {NN:511, PL:null},
+      350: {NN:715, PL:null},
+      480: {NN:920, PL:null},
+    },
+    24: {
+      36: {NN:419, PL:null},
+      60: {NN:225, PL:null},
+      100: {NN:null, PL:354},
+      150: {NN:null, PL:451},
+      200: {NN:null, PL:551},
+    },
+    5: {},
+  },
+  "IP67": {
+    12: {
+      24: {NN:198, PL:null},
+      36: {NN:209, PL:207},
+      48: {NN:432, PL:241},
+      60: {NN:471, PL:336},
+      96: {NN:656, PL:632},
+      100: {NN:522, PL:594},
+      120: {NN:768, PL:null},
+      150: {NN:650, PL:806},
+      200: {NN:874, PL:934},
+      250: {NN:1003, PL:1250},
+    },
+    24: {
+      24: {NN:null, PL:221},
+      48: {NN:null, PL:252},
+      60: {NN:null, PL:269},
+      72: {NN:null, PL:1064},
+      96: {NN:null, PL:1113},
+      120: {NN:768, PL:null},
+    },
+    5: {},
+  },
+};
+
+// ============ Логіка вибору бренду (NN = NeoNovi, PL = ProLum) ============
+// За замовчуванням ("Авто") рахуємо по NN_, і якщо для цього типу/вольтажу немає жодної
+// ціни NN_ — автоматично переходимо на PL_. При потребі бренд можна обрати вручну.
+const BRAND_OPTIONS = ['Авто','NN','PL'];
+
+// LED: чи є хоч одна NN-ціна для цього типу LED-стрічки (по всіх вольтажах)
+function ledHasBrand(type, brand){
+  const volts = LED_PRICE[type];
+  if(!volts) return false;
+  return Object.values(volts).some(v => v && v[brand] != null);
+}
+function resolveLedBrand(type, brandPref){
+  if(brandPref === 'NN' || brandPref === 'PL') return brandPref;
+  return ledHasBrand(type, 'NN') ? 'NN' : 'PL';
+}
+function ledPrice(type, voltage, brandPref){
+  const brand = resolveLedBrand(type, brandPref);
+  const cell = LED_PRICE[type] && LED_PRICE[type][voltage];
+  return (cell && cell[brand]) || 0;
+}
+
+// БЖ: чи є хоч одна NN-ціна для цього типу+вольтажу БЖ (по всіх потужностях)
+function psuHasBrand(type, voltage, brand){
+  const table = PSU_TABLE[type] && PSU_TABLE[type][voltage];
+  if(!table) return false;
+  return Object.values(table).some(v => v && v[brand] != null);
+}
+function resolvePsuBrand(type, voltage, brandPref){
+  if(brandPref === 'NN' || brandPref === 'PL') return brandPref;
+  return psuHasBrand(type, voltage, 'NN') ? 'NN' : 'PL';
+}
+// повертає {wattage: ціна} лише для тих потужностей, де є ціна обраного бренду
+function psuTableForBrand(type, voltage, brandPref){
+  const brand = resolvePsuBrand(type, voltage, brandPref);
+  const table = (PSU_TABLE[type] && PSU_TABLE[type][voltage]) || {};
+  const out = {};
+  Object.keys(table).forEach(w=>{
+    const v = table[w][brand];
+    if(v != null) out[w] = v;
+  });
+  return out;
+}
+
+// ---- Автопідбір БЖ з фолбеком по бренду і, якщо треба, по типу корпуса (вольтаж БЖ ЗАВЖДИ фіксований — він має збігатись із вольтажем системи) ----
+// Найменша потужність >= requiredW серед NN на заданих типі+вольтажі; якщо немає — серед PL там же.
+function psuFindAtVoltage(type, voltage, requiredW){
+  const table = (PSU_TABLE[type] && PSU_TABLE[type][voltage]) || {};
+  const nnW = Object.keys(table).map(Number).filter(w => table[w] && table[w].NN != null && w >= requiredW).sort((a,b)=>a-b);
+  if(nnW.length) return { wattage: nnW[0], price: table[nnW[0]].NN, brand: 'NN', voltage: Number(voltage), type };
+  const plW = Object.keys(table).map(Number).filter(w => table[w] && table[w].PL != null && w >= requiredW).sort((a,b)=>a-b);
+  if(plW.length) return { wattage: plW[0], price: table[plW[0]].PL, brand: 'PL', voltage: Number(voltage), type };
+  return null;
+}
+// Те саме, але для одного конкретного (зафіксованого вручну) бренду.
+function psuFindBrandAtVoltage(type, brand, voltage, requiredW){
+  const table = (PSU_TABLE[type] && PSU_TABLE[type][voltage]) || {};
+  const ws = Object.keys(table).map(Number).filter(w => table[w] && table[w][brand] != null && w >= requiredW).sort((a,b)=>a-b);
+  if(ws.length) return { wattage: ws[0], price: table[ws[0]][brand], brand, voltage: Number(voltage), type };
+  return null;
+}
+// Повний автопідбір (бренд = "Авто"): спочатку NN, потім PL на обраному типі корпуса й вольтажі
+// (вольтаж БЖ завжди дорівнює вольтажу системи — він не змінюється).
+// Якщо на цьому типі немає відповідного варіанта в жодному з брендів —
+// шукаємо найближчий за потужністю варіант (теж НН → PL) серед ІНШИХ типів корпуса на тому ж вольтажі.
+function psuAutoSelect(preferredType, voltage, requiredW){
+  const atPreferred = psuFindAtVoltage(preferredType, voltage, requiredW);
+  if(atPreferred) return atPreferred;
+  let best = null;
+  PSU_TYPES.forEach(t=>{
+    if(t === preferredType) return;
+    const c = psuFindAtVoltage(t, voltage, requiredW);
+    if(c && (!best || c.wattage < best.wattage || (c.wattage === best.wattage && c.brand === 'NN' && best.brand === 'PL'))){
+      best = c;
+    }
+  });
+  return best;
+}
+// Той самий фолбек по типу корпуса, але бренд зафіксований вручну (NN або PL) — без переходу на інший бренд.
+function psuManualBrandSelect(preferredType, brand, voltage, requiredW){
+  const atPreferred = psuFindBrandAtVoltage(preferredType, brand, voltage, requiredW);
+  if(atPreferred) return atPreferred;
+  let best = null;
+  PSU_TYPES.forEach(t=>{
+    if(t === preferredType) return;
+    const c = psuFindBrandAtVoltage(t, brand, voltage, requiredW);
+    if(c && (!best || c.wattage < best.wattage)) best = c;
+  });
+  return best;
+}
+
+// Автоперехід вольтажу системи/БЖ: довжина неону > 8 м/п → 24В, інакше → 12В
+function applyAutoSystemVoltage(){
+  const autoV = (state.totalLength || 0) > 8 ? 24 : 12;
+  state.systemVoltage = autoV;
+  state.psuVoltage = autoV;
+}
+
+// Автопідбір кабелю живлення за типом корпуса БЖ:
+// Пластик → "З роз'ємом" 3м 0.5мм.кв; Метал/IP67 → "Відрізок" 0.75мм.кв (10м)
+function applyDefaultCableForPsuType(){
+  if(state.psuType === 'Пластик'){
+    state.cableType = "З роз'ємом";
+    state.cableSize = "3м 0.5мм.кв";
+  } else {
+    state.cableType = 'Відрізок';
+    state.cableSize = "0.75мм.кв (10м)";
+  }
+}
+
+// димер: [макс.струм А, тип, ціна]
+const DIMMER_TABLE = [
+  {amps:6, type:'З пультом', price:98},
+  {amps:18, type:'З пультом', price:298},
+  {amps:30, type:'З пультом', price:311},
+];
+
+const CABLE_ROZYOM = {"1м 0.3мм.кв":26,"2м 0.3мм.кв":37,"2м 0.5мм.кв":51,"3м 0.3мм.кв":63,"3м 0.5мм.кв":73,"5м 0.5мм.кв":116};
+const CABLE_VIDRIZOK = {"0.35мм.кв (10м)":133,"0.5мм.кв (10м)":172,"0.75мм.кв (10м)":224,"1.мм.кв (10м)":323};
+const CABLE_USB = {"1.5 прозорий":32,"З вимикачем":60};
+
+const MOUNT_HW_PRICE = {'Дистанційне':12,'Ліска':50,'Присоска':20,'Трос':100};
+const MOUNT_HW_NO_QTY = ['Ліска','Трос']; // кріплення, що йдуть одиницею — кількість не потрібна
+
+const SEALANT_CONSUMPTION = {'6мм':30,'8мм':40,'12мм':60}; // мл на м/п
+const SEALANT_TUBE_PRICE = 400; // грн за тубу 300мл
+const SEALANT_TUBE_ML = 300;
+
+// Ціноутворення (службові — Блок D з Excel)
+const FIXED_COSTS = 32000;       // Постійні витрати
+const FIXED_COSTS_PERIOD = 100000; // Постійні витрати за 2 міс
+const OVERHEAD_COEF = FIXED_COSTS / FIXED_COSTS_PERIOD; // Коефіцієнт накладних витрат
+const DESIRED_MARGIN = 0.50;     // Бажана маржа (% прибутку)
+const PRICE_FLUCTUATION_MARKUP = 0; // надбавка на коливання ціни запчастин (прибрана)
+
+
+/* ============ СТАН ============ */
+const DEFAULTS = {
+  productName: '', widthCm: 0, heightCm: 0, mount: 'Внутрішній',
+  calcSource: '', // 'З файлу' | 'Вручну' — як було виконано розрахунок
+  millingMode: 'Аутсорс', // 'Аутсорс' | 'Свій ЧПУ' — за замовчуванням Аутсорс для будь-якого способу розрахунку
+  millingOutsourcePrice: 300,
+  millingOutsourceManual: false, // чи змінено ціну аутсорсу вручну (інакше підбирається автоматично за площею)
+  assemblyCount: 0,
+  totalLength: 0,
+  diffusers: [
+    {color:'', size:'', len:0},
+    {color:'', size:'', len:0},
+    {color:'', size:'', len:0},
+  ],
+  diffuserActive: [true, false, false],
+  ledTypeOverride: ['','',''],
+  ledBrand: 'Авто',
+  systemVoltage: 12,
+  psuType: 'Пластик', psuVoltage: 12, psuManual: false, psuWattageManual: null,
+  psuBrand: 'Авто',
+  dimmerEnabled: true, dimmerManual: false, dimmerManualAmps: null,
+  cableType: '', cableSize: '', cableManual: false,
+  cablePositionActive: false, cablePosition: 'Зверху по центру',
+  mountHwType: '', mountHwQty: 0, mountHwWidth: 0, mountHwHeight: 0,
+  sealantType: 'Густий прозорий 300мл',
+  backlight: { active: false, material: 'Плівка', price: BACKLIGHT_PRICES['Плівка'], appliedLength: 0, shape: 'Коло' },
+  extraCosts: {
+    engraving: { active: false, price: 0 },
+    sticker: { active: false, price: 0 },
+    other: { active: false, label: '', price: 0 },
+  },
+};
+
+let state = JSON.parse(JSON.stringify(DEFAULTS));
+let cardRevealed = false; // чи розгорнута картка з повним розрахунком (натиснута кнопка "Рекомендована ціна")
+let compactMode = true; // стиснутий ("швидкий") режим ручного розрахунку — показує лише ключові поля
+
+function updateCompactModeUI(){
+  const grid = document.getElementById('mainGrid');
+  if(grid) grid.classList.toggle('compact-mode', compactMode);
+  const btn = document.getElementById('compactToggleBtn');
+  const label = document.getElementById('compactToggleLabel');
+  if(btn) btn.textContent = compactMode ? 'Розгорнути повністю ↓' : 'Згорнути до основних полів ↑';
+  if(label) label.textContent = compactMode ? 'Швидке заповнення — основні поля' : 'Повний розрахунок — всі параметри';
+  // Верхню картку-заголовок ховаємо лише коли вже відкрито стиснутий розрахунок
+  // (на екрані вибору способу розрахунку вона потрібна завжди).
+  const hero = document.querySelector('.hero');
+  const mainContent = document.getElementById('mainContent');
+  if(hero && mainContent){
+    const isMainShown = mainContent.style.display !== 'none';
+    hero.style.display = (compactMode && isMainShown) ? 'none' : '';
+  }
+}
+
+/* ============ ДОПОМІЖНІ ФУНКЦІЇ ============ */
+function fmt(n){
+  if(!isFinite(n)) return '0';
+  return n.toLocaleString('uk-UA', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+function fmt0(n){
+  if(!isFinite(n)) return '0';
+  return Math.round(n).toLocaleString('uk-UA');
+}
+
+// Парсить число, дозволяючи кому як десятковий роздільник
+function parseNum(str){
+  if(typeof str !== 'string') return parseFloat(str) || 0;
+  const cleaned = str.replace(',', '.').replace(/[^0-9.\-]/g, '');
+  const n = parseFloat(cleaned);
+  return isNaN(n) ? 0 : n;
+}
+
+// Встановлює значення поля, лише якщо воно зараз не редагується користувачем
+function setFieldValue(id, val){
+  const el = document.getElementById(id);
+  if(document.activeElement === el) return;
+  el.value = (val === 0 || val === null || val === undefined || (typeof val === 'number' && isNaN(val))) ? '' : val;
+}
+
+function buildDiffuserRows(){
+  const wrap = document.getElementById('diffuserRows');
+  wrap.innerHTML = '';
+  state.diffusers.forEach((d, i) => {
+    if(i > 0){
+      const cbLine = document.createElement('div');
+      cbLine.className = 'checkbox-row diffuser-extra';
+      cbLine.style.marginBottom = '10px';
+      cbLine.innerHTML = `<input type="checkbox" id="diffActive${i}" ${state.diffuserActive[i]?'checked':''}><label for="diffActive${i}">Додати розсіювач ${i+1}</label>`;
+      wrap.appendChild(cbLine);
+      cbLine.querySelector('input').addEventListener('change', e=>{
+        state.diffuserActive[i] = e.target.checked;
+        if(!e.target.checked){
+          state.diffusers[i] = {color:'', size:'', len:0};
+        }
+        buildDiffuserRows();
+        render();
+      });
+      if(!state.diffuserActive[i]) return;
+    }
+    const row = document.createElement('div');
+    row.className = 'diffuser-row' + (i > 0 ? ' diffuser-extra' : '');
+    row.innerHTML = `
+      <div class="idx">${i+1}</div>
+      <div class="field">
+        <label>Колір <span class="required-mark">*</span></label>
+        <select data-i="${i}" data-k="color" class="dColor">
+          <option value="" ${d.color===''?'selected':''}>Оберіть колір</option>
+          ${LED_COLORS.map(c=>`<option ${c===d.color?'selected':''}>${c}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field">
+        <label>Ширина неону</label>
+        <select data-i="${i}" data-k="size" class="dSize">
+          <option value="" ${d.size===''?'selected':''}>Оберіть тип</option>
+          ${DIFFUSER_SIZES.map(s=>`<option ${s===d.size?'selected':''}>${s}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field diffuser-adv">
+        <label>Довжина, м/п</label>
+        <input type="text" inputmode="decimal" min="0" data-i="${i}" data-k="len" class="dLen" placeholder="Довжину" value="${d.len ? String(d.len).replace('.',',') : ''}">
+      </div>
+      <div class="price-tag diffuser-adv" id="dPrice${i}">0 грн</div>
+    `;
+    wrap.appendChild(row);
+  });
+  wrap.querySelectorAll('.dColor,.dSize').forEach(el=>{
+    el.addEventListener('change', e=>{
+      const i = +e.target.dataset.i, k = e.target.dataset.k;
+      state.diffusers[i][k] = e.target.value;
+      if(k === 'color' && e.target.value){
+        e.target.classList.remove('input-error');
+        const statusEl = document.getElementById('sendStatus');
+        if(statusEl.textContent === 'Оберіть колір стрічки'){ statusEl.className = 'send-status'; statusEl.textContent = ''; }
+      }
+      render();
+    });
+  });
+  wrap.querySelectorAll('.dLen').forEach(el=>{
+    el.addEventListener('input', e=>{
+      const i = +e.target.dataset.i;
+      state.diffusers[i].len = parseNum(e.target.value);
+      render();
+    });
+  });
+}
+
+function buildLedOverrideSelectors(){
+  const wrap = document.getElementById('ledOverrides');
+  wrap.innerHTML = '';
+  state.diffusers.forEach((d,i)=>{
+    if(i > 0 && !state.diffuserActive[i]) return;
+    const f = document.createElement('div');
+    f.className = 'field';
+    f.innerHTML = `
+      <label>Тип LED — ${i+1} <span class="val">(за замовч. авто)</span></label>
+      <select data-i="${i}" class="ledTypeSel">
+        <option value="">Авто (за монтажем)</option>
+        ${LED_TYPES.map(t=>`<option value="${t}" ${state.ledTypeOverride[i]===t?'selected':''}>${t}</option>`).join('')}
+      </select>
+    `;
+    wrap.appendChild(f);
+  });
+  wrap.querySelectorAll('.ledTypeSel').forEach(el=>{
+    el.addEventListener('change', e=>{
+      const i = +e.target.dataset.i;
+      state.ledTypeOverride[i] = e.target.value;
+      render();
+    });
+  });
+}
+
+function buildCableSizeOptions(){
+  const sel = document.getElementById('cableSize');
+  const field = document.getElementById('cableSizeField');
+  if(!state.cableType){
+    field.style.display = 'none';
+    sel.innerHTML = '';
+    return;
+  }
+  field.style.display = 'flex';
+  let map;
+  if(state.cableType === "З роз'ємом") map = CABLE_ROZYOM;
+  else if(state.cableType === 'Відрізок') map = CABLE_VIDRIZOK;
+  else map = CABLE_USB;
+  const keys = Object.keys(map);
+  if(!keys.includes(state.cableSize)) state.cableSize = keys[0];
+  sel.innerHTML = keys.map(k=>`<option ${k===state.cableSize?'selected':''}>${k}</option>`).join('');
+}
+
+/* ============ КОНТРАЖУР: периметр основи та довжина неону ============ */
+// Якщо є розбивка з SVG-файлу (реальний контур макету) — беремо периметр
+// звідти як є. Перемикач форми на це не впливає.
+// Якщо SVG немає (ручний режим, є лише Ш×В) — перемикач форми вирішує
+// теоретичну форму: "Коло" (за замовчуванням) — периметр кола за розмірами
+// Ш×В (діаметр = середнє Ш і В); "Довільна" — периметр прямокутника за Ш×В.
+// Жодних відступів від краю не віднімається — periметр рахується напряму.
+function isBacklightUsingSvgPerimeter(){
+  const svgRow = document.getElementById('svgBreakdownRow');
+  return !!(svgRow && svgRow.style.display !== 'none' && parseNum(document.getElementById('svgPerimeterOut').value) > 0);
+}
+
+function getBacklightBasePerimeterM(){
+  if(isBacklightUsingSvgPerimeter()) return parseNum(document.getElementById('svgPerimeterOut').value);
+  const w = (state.widthCm||0) / 100, h = (state.heightCm||0) / 100;
+  if(w <= 0 && h <= 0) return 0;
+  if(state.backlight.shape === 'Коло'){
+    const diameter = (w + h) / 2;
+    return Math.PI * diameter;
+  }
+  return 2 * (w + h);
+}
+
+// Підставляє довжину неону контражура прямо в "Загальна довжина неону".
+// Щоб не накопичувати суму на кожному render(), пам'ятаємо, скільки вже було
+// додано (state.backlight.appliedLength), і коригуємо лише на різницю, коли
+// довжина контражура змінюється (увімкнення/вимкнення, зміна Ш/В чи SVG).
+function syncBacklightLength(){
+  const basePerimeterM = getBacklightBasePerimeterM();
+  const rounded = Math.ceil(basePerimeterM);
+  const newApplied = state.backlight.active ? rounded : 0;
+  const prevApplied = state.backlight.appliedLength || 0;
+  if(newApplied !== prevApplied){
+    const delta = newApplied - prevApplied;
+    state.totalLength = Math.max(0, (state.totalLength||0) + delta);
+    state.diffusers[0].len = Math.max(0, (state.diffusers[0].len||0) + delta);
+    state.backlight.appliedLength = newApplied;
+  }
+}
+
+/* ============ ОСНОВНИЙ РОЗРАХУНОК ============ */
+function calculate(){
+  const totalLength = state.totalLength || 0;
+  const external = state.mount === 'Зовнішній';
+  const widthM = (state.widthCm||0) / 100;
+  const heightM = (state.heightCm||0) / 100;
+
+  // Матеріал: ((Ш+3)×(В+3))/10000 — см з припуском 3см на кожну сторону
+  // Якщо розміри не задані (Ш=0 і В=0), площа матеріалу теж 0 — без "залишкового" припуску
+  const hasSize = (state.widthCm||0) > 0 || (state.heightCm||0) > 0;
+  const materialArea = hasSize ? ((state.widthCm||0) + 3) * ((state.heightCm||0) + 3) / 10000 : 0;
+  const materialCost = materialArea * MATERIAL_PRICE_5MM;
+
+  // Контражур (опційний): площа підложки — та сама формула, що й матеріал
+  const backlightArea = hasSize ? ((state.widthCm||0) + 3) * ((state.heightCm||0) + 3) / 10000 : 0;
+  const backlightCost = state.backlight.active ? backlightArea * (state.backlight.price || 0) : 0;
+
+  // Контражур: довжина неону = периметр основи (SVG / коло / прямокутник), округлено вгору до цілого м/п
+  // (саме підставляння цієї довжини в "Загальна довжина неону" відбувається в syncBacklightLength(),
+  // тут лише читаємо поточні значення для відображення в картці)
+  const backlightBasePerimeterM = getBacklightBasePerimeterM();
+  const backlightNeonLength = state.backlight.active ? (state.backlight.appliedLength || 0) : Math.ceil(backlightBasePerimeterM);
+
+  // Фрезерування: довжина неону + периметрові доріжки (Ш×3 + В×3), переведені в м/п
+  const millingLength = totalLength + widthM*3 + heightM*3;
+  const millingCost = state.millingMode === 'Свій ЧПУ'
+    ? millingLength * MILLING_PRICE
+    : (state.millingOutsourcePrice || 0); // Аутсорс — фіксована ціна за тарифом площі
+
+  // Збірка: ціна за елемент залежить від типу монтажу
+  const assemblyUnitPrice = ASSEMBLY_PRICE[state.mount] || ASSEMBLY_PRICE['Внутрішній'];
+  const assemblyCost = (state.assemblyCount||0) * assemblyUnitPrice;
+
+  // Розсіювач
+  const diffuserCosts = state.diffusers.map(d => (d.len||0) * (DIFFUSER_PRICE[d.size]||0));
+  const diffuserSum = state.diffusers.reduce((s,d)=>s+(d.len||0),0);
+  const diffuserDelta = diffuserSum - totalLength;
+
+  // Потужність / вольтаж системи (обирається вручну)
+  const systemVoltage = state.systemVoltage || 12;
+  const totalPowerW = totalLength * LED_POWER_PER_M;
+  const requiredPsuW = totalPowerW * 1.2;
+  const dimmerCurrentA = systemVoltage ? totalPowerW / systemVoltage : 0;
+
+  // LED стрічка (бренд: Авто → NN_ з авто-переходом на PL_, або обраний вручну)
+  const ledType = external ? 'IP67' : 'Звичайна';
+  const ledLines = state.diffusers.map((d,i)=>{
+    const type = state.ledTypeOverride[i] || ledType;
+    const resolvedBrand = resolveLedBrand(type, state.ledBrand);
+    const priceMeter = ledPrice(type, systemVoltage, state.ledBrand);
+    const len = d.len || 0;
+    return { color: d.color, type, brand: resolvedBrand, len, priceMeter, cost: len*priceMeter };
+  });
+  const ledCostTotal = ledLines.reduce((s,l)=>s+l.cost,0);
+
+  // Блок живлення
+  // — режим "Перевибрати вручну": потужність фіксує користувач, ціна береться з таблиці
+  //   для обраних типу/вольтажу/бренду (як і раніше).
+  // — автоматичний режим: спочатку шукаємо NN, потім PL на обраних типі й вольтажі БЖ
+  //   (вольтаж БЖ завжди фіксований — має збігатись із вольтажем системи, тому НІКОЛИ не змінюється);
+  //   якщо на обраному типі корпуса немає жодного придатного варіанта в жодному з брендів —
+  //   підбираємо найближчий за потужністю варіант серед ІНШИХ типів корпуса (Пластик/Метал/IP67) на тому ж вольтажі.
+  //   Якщо бренд обрано вручну (NN/PL) — той самий фолбек по типу, але без переходу на інший бренд.
+  const psuBrandForManualUI = resolvePsuBrand(state.psuType, state.psuVoltage, state.psuBrand);
+  const psuTable = psuTableForBrand(state.psuType, state.psuVoltage, state.psuBrand);
+  const availWattages = Object.keys(psuTable).map(Number).sort((a,b)=>a-b);
+  let psuWattage = null, psuPrice = 0, psuFound = false;
+  let psuBrandResolved = psuBrandForManualUI, psuVoltageUsed = state.psuVoltage, psuTypeUsed = state.psuType;
+  if(requiredPsuW > 0){
+    if(state.psuManual && state.psuWattageManual){
+      psuWattage = state.psuWattageManual;
+      psuPrice = psuTable[psuWattage] || 0;
+      psuFound = true;
+    } else {
+      const result = (state.psuBrand === 'NN' || state.psuBrand === 'PL')
+        ? psuManualBrandSelect(state.psuType, state.psuBrand, state.psuVoltage, requiredPsuW)
+        : psuAutoSelect(state.psuType, state.psuVoltage, requiredPsuW);
+      if(result){
+        psuWattage = result.wattage;
+        psuPrice = result.price;
+        psuBrandResolved = result.brand;
+        psuVoltageUsed = result.voltage;
+        psuTypeUsed = result.type;
+        psuFound = true;
+      }
+    }
+  }
+
+  // Димер — автопідбір лише коли вже є реальні дані (довжина неону > 0);
+  // якщо тип обрано вручну — рахуємо завжди, незалежно від довжини.
+  let dimmer = null, dimmerAuto = false;
+  if(state.dimmerEnabled){
+    if(state.dimmerManual && state.dimmerManualAmps){
+      dimmer = DIMMER_TABLE.find(d => d.amps === state.dimmerManualAmps) || null;
+    } else if((state.totalLength||0) > 0){
+      const cand = DIMMER_TABLE.filter(d => d.amps >= dimmerCurrentA);
+      dimmer = cand.length ? cand[0] : null;
+      dimmerAuto = true;
+    }
+  }
+  const dimmerCost = dimmer ? dimmer.price : 0;
+
+  // Кабель — рахується автоматично, щойно є тип (підставлений за замовчуванням
+  // від БЖ, коли вже введена довжина неону, або обраний вручну)
+  let cableMap = {};
+  if(state.cableType === "З роз'ємом") cableMap = CABLE_ROZYOM;
+  else if(state.cableType === 'Відрізок') cableMap = CABLE_VIDRIZOK;
+  else if(state.cableType === 'USB') cableMap = CABLE_USB;
+  const cableIncluded = !!state.cableType;
+  const cableCost = cableIncluded ? (cableMap[state.cableSize] || 0) : 0;
+
+  // Кріплення (окремо — Підставка акрил рахується за площею й ціною матеріалу)
+  let mountHwCost = 0;
+  if(state.mountHwType === 'Підставка акрил'){
+    const w = state.mountHwWidth||0, h = state.mountHwHeight||0;
+    mountHwCost = (w * h / 10000) * MATERIAL_PRICE_5MM;
+  } else if(state.mountHwType){
+    const effQty = MOUNT_HW_NO_QTY.includes(state.mountHwType) ? 1 : (state.mountHwQty||0);
+    mountHwCost = effQty * (MOUNT_HW_PRICE[state.mountHwType]||0);
+  }
+
+  // Герметик
+  let sealantMl = 0, sealantCost = 0;
+  if(external){
+    sealantMl = state.diffusers.reduce((s,d)=> s + (d.len||0) * (SEALANT_CONSUMPTION[d.size]||0), 0);
+    sealantCost = sealantMl * (SEALANT_TUBE_PRICE / SEALANT_TUBE_ML);
+  }
+
+  // Додаткові витрати (Гравіювання, Наліпка) — ціна вводиться вручну
+  const engravingCost = state.extraCosts.engraving.active ? (state.extraCosts.engraving.price || 0) : 0;
+  const stickerCost = state.extraCosts.sticker.active ? (state.extraCosts.sticker.price || 0) : 0;
+  const otherCost = state.extraCosts.other.active ? (state.extraCosts.other.price || 0) : 0;
+  const extraCostsTotal = engravingCost + stickerCost + otherCost;
+
+  const subtotal = materialCost + millingCost + assemblyCost
+    + diffuserCosts.reduce((a,b)=>a+b,0)
+    + ledCostTotal
+    + psuPrice + dimmerCost + cableCost + mountHwCost + sealantCost
+    + backlightCost
+    + extraCostsTotal;
+
+  // Вартість виготовлення — надбавка 5% на коливання ціни запчастин застосовується
+  // до всього, КРІМ збірки (пайки) і фрезерування — вони додаються без надбавки.
+  const manufacturingCost = (subtotal - assemblyCost - millingCost) * (1 + PRICE_FLUCTUATION_MARKUP) + assemblyCost + millingCost;
+
+  // Накладні витрати і рекомендована ціна для клієнта
+  const overhead = manufacturingCost * OVERHEAD_COEF;
+  const fullCost = manufacturingCost + overhead;
+  const recommendedPrice = fullCost / (1 - DESIRED_MARGIN);
+  const priceD5 = recommendedPrice * (1 - 0.05);
+  const priceD10 = recommendedPrice * (1 - 0.10);
+
+  return {
+    materialArea, materialCost, backlightArea, backlightCost,
+    backlightBasePerimeterM, backlightNeonLength,
+    millingLength, millingCost, assemblyUnitPrice, assemblyCost,
+    diffuserCosts, diffuserSum, diffuserDelta,
+    systemVoltage, totalPowerW, requiredPsuW, dimmerCurrentA,
+    ledType, ledLines, ledCostTotal,
+    psuWattage, psuPrice, psuFound, availWattages, psuBrandResolved, psuVoltageUsed, psuTypeUsed,
+    dimmer, dimmerCost, dimmerAuto,
+    cableCost, cableIncluded,
+    mountHwCost,
+    sealantMl, sealantCost,
+    engravingCost, stickerCost, otherCost, extraCostsTotal,
+    subtotal, manufacturingCost, overhead, fullCost,
+    recommendedPrice, priceD5, priceD10,
+  };
+}
+
+/* ============ РЕНДЕР ============ */
+function render(){
+  updateCompactModeUI();
+  syncBacklightLength();
+  // Кабель за замовчуванням — узгоджений з поточним типом БЖ, але тільки коли вже
+  // є реальні дані (довжина неону > 0). До того, як довжину введено, кабель не підставляємо.
+  if(!state.cableManual){
+    if((state.totalLength||0) > 0) applyDefaultCableForPsuType();
+    else { state.cableType = ''; state.cableSize = ''; }
+  }
+  setFieldValue('assemblyCount', state.assemblyCount);
+  setFieldValue('totalLength', state.totalLength);
+  document.getElementById('systemVoltage').value = state.systemVoltage;
+  document.getElementById('ledBrand').value = state.ledBrand;
+  document.getElementById('psuType').value = state.psuType;
+  document.getElementById('psuVoltage').value = state.psuVoltage;
+  document.getElementById('psuBrand').value = state.psuBrand;
+  document.getElementById('psuManual').checked = state.psuManual;
+  document.getElementById('psuManualRow').style.display = state.psuManual ? 'flex' : 'none';
+  document.getElementById('dimmerEnabled').checked = state.dimmerEnabled;
+  document.getElementById('dimmerManualBlock').style.display = state.dimmerEnabled ? 'block' : 'none';
+  document.getElementById('dimmerManual').checked = state.dimmerManual;
+  document.getElementById('dimmerManualRow').style.display = (state.dimmerEnabled && state.dimmerManual) ? 'flex' : 'none';
+  const dmSel = document.getElementById('dimmerManualSelect');
+  if(!state.dimmerManualAmps) state.dimmerManualAmps = DIMMER_TABLE[0].amps;
+  dmSel.innerHTML = DIMMER_TABLE.map(d=>`<option value="${d.amps}" ${d.amps===state.dimmerManualAmps?'selected':''}>${d.type} до ${d.amps}А — ${d.price} грн</option>`).join('');
+
+  document.getElementById('cableType').value = state.cableType;
+  document.getElementById('cablePositionActive').checked = state.cablePositionActive;
+  document.getElementById('cablePositionRow').style.display = state.cablePositionActive ? 'flex' : 'none';
+  document.getElementById('cablePosition').value = state.cablePosition;
+  document.getElementById('mountHwType').value = state.mountHwType;
+  setFieldValue('mountHwQty', state.mountHwQty);
+  setFieldValue('mountHwWidth', state.mountHwWidth);
+  setFieldValue('mountHwHeight', state.mountHwHeight);
+
+  const isStand = state.mountHwType === 'Підставка акрил';
+  const mountHwNeedsQty = state.mountHwType && !isStand && !MOUNT_HW_NO_QTY.includes(state.mountHwType);
+  document.getElementById('mountHwQtyField').style.display = mountHwNeedsQty ? 'flex' : 'none';
+  document.getElementById('mountHwQtyLabel').innerHTML = state.mountHwType === 'Дистанційне'
+    ? 'Кількість <span class="required-mark">*</span>' : 'Кількість';
+  document.getElementById('mountHwWidthField').style.display = isStand ? 'flex' : 'none';
+  document.getElementById('mountHwHeightField').style.display = isStand ? 'flex' : 'none';
+
+  buildCableSizeOptions();
+
+  // Спосіб фрезерування: підбираємо ціну Аутсорсу за площею ДО calculate(),
+  // щоб підсумкові суми в цьому ж рендері вже враховували актуальний тариф,
+  // а не значення з попереднього рендеру.
+  const hasSizeForMilling = (state.widthCm||0) > 0 || (state.heightCm||0) > 0;
+  const materialAreaForMilling = hasSizeForMilling ? ((state.widthCm||0) + 3) * ((state.heightCm||0) + 3) / 10000 : 0;
+  const millingTierPriceForRender = hasSizeForMilling ? outsourceMillingTierPrice(materialAreaForMilling) : 0;
+  if(state.millingMode === 'Аутсорс' && !state.millingOutsourceManual){
+    state.millingOutsourcePrice = millingTierPriceForRender;
+  }
+
+  const r = calculate();
+
+  // авто-поля матеріалу / фрезерування
+  document.getElementById('materialArea').value = fmt(r.materialArea) + ' м²';
+  document.getElementById('materialPriceNote').innerHTML = `Формула: (Ширина+3)×(Висота+3)/10000`;
+  document.getElementById('millingLength').value = fmt(r.millingLength) + ' м/п';
+  document.getElementById('millingPriceNote').innerHTML = state.millingMode === 'Аутсорс'
+    ? `Формула: Довжина неону + Ширина×3 + Висота×3. <span style="color:var(--muted)">Довідково — при Аутсорсі на ціну фрезерування не впливає, рахується лише за площею.</span>`
+    : `Формула: Довжина неону + Ширина×3 + Висота×3`;
+
+  // Спосіб фрезерування: Аутсорс (тариф за площею) / Свій ЧПУ (за м/п)
+  [...document.getElementById('millingModeToggle').children].forEach(b=>{
+    b.classList.toggle('active', b.dataset.val === state.millingMode);
+  });
+  document.getElementById('millingOutsourceRow').style.display = state.millingMode === 'Аутсорс' ? 'flex' : 'none';
+  document.getElementById('millingOwnCncRow').style.display = state.millingMode === 'Свій ЧПУ' ? 'flex' : 'none';
+
+  setFieldValue('millingOutsourcePriceInput', state.millingOutsourcePrice);
+  document.getElementById('millingOutsourceNote').innerHTML = state.millingOutsourceManual
+    ? `Тариф за площею (${fmt(r.materialArea)} м²): <b>${millingTierPriceForRender} грн</b> — але встановлено вручну.`
+    : !hasSizeForMilling
+      ? `Вкажіть ширину і висоту, щоб підібрати тариф: до 0.5 м² — 300 грн, 1.0–1.1 м² — 500 грн, від 1.2 м² — 700 грн.`
+      : `Автоматично за площею (${fmt(r.materialArea)} м²): до 0.5 м² — 300 грн, 1.0–1.1 м² — 500 грн, від 1.2 м² — 700 грн.`;
+
+  // Контражур
+  [...document.getElementById('backlightToggle').children].forEach(b=>{
+    b.classList.toggle('active', (b.dataset.val === 'on') === state.backlight.active);
+  });
+  document.getElementById('backlightSettings').style.display = state.backlight.active ? 'block' : 'none';
+  document.getElementById('backlightMaterial').value = state.backlight.material;
+  setFieldValue('backlightPriceInput', state.backlight.price);
+  document.getElementById('backlightArea').value = fmt(r.backlightArea) + ' м²';
+  document.getElementById('backlightAreaNote').innerHTML = `Формула: (Ширина+3)×(Висота+3)/10000`;
+  document.getElementById('backlightNeonLength').value = fmt0(r.backlightNeonLength) + ' м/п';
+  document.getElementById('backlightNeonLengthNote').innerHTML = r.backlightBasePerimeterM > 0
+    ? (isBacklightUsingSvgPerimeter()
+        ? `Периметр основи: <b>${fmt(r.backlightBasePerimeterM)} м</b> (з SVG-файлу) → округлено вгору до <b>${fmt0(r.backlightNeonLength)} м/п</b>.<br>Автоматично підставлено в «Загальна довжина неону».`
+        : state.backlight.shape === 'Коло'
+          ? `Коло за розмірами Ш×В: діаметр ≈ ${fmt(((state.widthCm||0)+(state.heightCm||0))/200)} м → периметр <b>${fmt(r.backlightBasePerimeterM)} м</b> → округлено вгору до <b>${fmt0(r.backlightNeonLength)} м/п</b>.<br>Автоматично підставлено в «Загальна довжина неону».`
+          : `Периметр прямокутника за Ш×В: <b>${fmt(r.backlightBasePerimeterM)} м</b> → округлено вгору до <b>${fmt0(r.backlightNeonLength)} м/п</b>.<br>Автоматично підставлено в «Загальна довжина неону».`)
+    : 'Вкажіть ширину/висоту (або завантажте SVG-файл), щоб порахувати довжину.';
+  document.getElementById('assemblyNote').innerHTML = `Ціна за елемент (${state.mount}): <b>${assemblyPriceLabel()} грн</b> × ${fmt(state.assemblyCount)} = <b>${fmt(r.assemblyCost)} грн</b>`
+    + (assemblyCountFromSvg ? `<br><span style="color:var(--muted)">Кількість елементів (${fmt0(state.assemblyCount)}) вирахувано автоматично з SVG-файлу — за кількістю частин, з яких складаються літери.</span>` : '');
+
+  // діапазон потужностей для ручного вибору БЖ
+  const wSel = document.getElementById('psuWattageSelect');
+  wSel.innerHTML = r.availWattages.map(w=>`<option value="${w}" ${w===state.psuWattageManual?'selected':''}>${w} Вт</option>`).join('') || '<option>—</option>';
+  if(state.psuManual && !state.psuWattageManual && r.availWattages.length){
+    state.psuWattageManual = r.availWattages[0];
+  }
+
+  // перевірка довжини розсіювача
+  const dCheck = document.getElementById('diffuserCheck');
+  const diffOk = Math.abs(r.diffuserDelta) < 0.001;
+  dCheck.innerHTML = `<div class="checkline ${diffOk?'ok':'bad'}">
+    ${diffOk ? '✓' : '⚠'} Сума довжин розсіювача: ${fmt(r.diffuserSum)} м/п ${diffOk ? '— збігається із загальною довжиною' : `— розбіжність ${fmt(r.diffuserDelta)} м/п із загальною довжиною (${fmt(state.totalLength)} м/п)`}
+  </div>`;
+  state.diffusers.forEach((d,i)=>{
+    const el = document.getElementById('dPrice'+i);
+    if(el) el.textContent = fmt(r.diffuserCosts[i]) + ' грн';
+    const lenEl = document.querySelector(`.dLen[data-i="${i}"]`);
+    if(lenEl && document.activeElement !== lenEl){
+      lenEl.value = d.len ? String(d.len).replace('.', ',') : '';
+    }
+  });
+
+  // LED
+  buildLedOverrideSelectors();
+  const ledWrap = document.getElementById('ledLines');
+  ledWrap.innerHTML = r.ledLines
+    .filter((l,i)=> i===0 || state.diffuserActive[i])
+    .map(l=>`
+    <div class="led-line">
+      <span class="name">${l.color || '—'}</span>
+      <span class="meta">${l.type} · ${l.brand} · ${fmt(l.len)} м · ${l.priceMeter} грн/м (${r.systemVoltage}В)</span>
+      <span class="price">${fmt(l.cost)} грн</span>
+    </div>
+  `).join('') || '<div class="led-line"><span class="name" style="color:var(--muted)">Заповніть розсіювач, щоб побачити розрахунок LED-стрічки</span></div>';
+
+  // PSU note
+  const psuTypeFallback = r.psuFound && !state.psuManual && r.psuTypeUsed !== state.psuType;
+  document.getElementById('psuAutoNote').innerHTML = `
+    Загальна потужність: <b>${fmt(r.totalPowerW)} Вт</b> · Потрібно з запасом 20%: <b>${fmt(r.requiredPsuW)} Вт</b><br>
+    Обрано: <b>${r.psuFound ? r.psuWattage + ' Вт' : 'не знайдено відповідного БЖ'}</b>, ${r.psuFound ? r.psuTypeUsed : state.psuType} ${state.psuVoltage}В · ${r.psuBrandResolved} — ${fmt(r.psuPrice)} грн
+    ${psuTypeFallback ? `<br><span style="color:var(--warn, #d99)">⚠ У типі "${state.psuType}" на ${state.psuVoltage}В підходящого варіанта немає — підібрано найближчий по потужності у типі "${r.psuTypeUsed}"</span>` : ''}
+  `;
+
+  // Dimmer note
+  document.getElementById('dimmerNote').innerHTML = state.dimmerEnabled
+    ? (r.dimmer
+        ? `Розрахунковий струм: <b>${fmt(r.dimmerCurrentA)} А</b> (за вольтажем системи ${r.systemVoltage}В)<br>${r.dimmerAuto ? 'Автопідбір' : 'Вибрано вручну'}: <b>${r.dimmer.type} до ${r.dimmer.amps}А</b> — ${fmt(r.dimmerCost)} грн`
+        : (state.dimmerManual ? 'Не знайдено відповідного димера.' : 'Очікую довжину неону — після її введення димер підбереться і порахується автоматично.'))
+    : 'Димер не додається.';
+
+  // Cable note
+  document.getElementById('cableNote').innerHTML = r.cableIncluded
+    ? `Ціна: <b>${fmt(r.cableCost)} грн</b>`
+    : 'Кабель не додається.';
+
+  // Mount hardware note
+  document.getElementById('mountHwNote').innerHTML = (state.mountHwType === 'Підставка акрил'
+    ? `${fmt(state.mountHwWidth)}×${fmt(state.mountHwHeight)} см × ${MATERIAL_PRICE_5MM} грн/м² = <b>${fmt(r.mountHwCost)} грн</b>`
+    : state.mountHwType
+      ? (MOUNT_HW_NO_QTY.includes(state.mountHwType)
+          ? `${state.mountHwType} (одиниця) — <b>${fmt(r.mountHwCost)} грн</b>`
+          : `${fmt(state.mountHwQty)} шт × ${MOUNT_HW_PRICE[state.mountHwType]} грн = <b>${fmt(r.mountHwCost)} грн</b>`)
+      : 'Кріплення не підібрано.')
+    + (mountHwFromSvg ? `<br><span style="color:var(--muted)">Підібрано автоматично з SVG-файлу — за діаметром отворів (9мм → Дистанційне, 5мм → Ліска, немає отворів → Підставка акрил).</span>` : '');
+
+  // Sealant note
+  document.getElementById('sealantNote').innerHTML = state.mount === 'Зовнішній'
+    ? `Витрата: <b>${fmt(r.sealantMl)} мл</b> × ${(SEALANT_TUBE_PRICE / SEALANT_TUBE_ML).toFixed(2)} грн/мл (з розрахунку ${SEALANT_TUBE_PRICE} грн за тубу 300мл) = <b>${fmt(r.sealantCost)} грн</b>`
+    : 'Не застосовується при внутрішньому монтажі.';
+
+  // Додаткові витрати (Гравіювання, Наліпка, Інше)
+  document.getElementById('extraEngravingActive').checked = state.extraCosts.engraving.active;
+  document.getElementById('extraEngravingRow').style.display = state.extraCosts.engraving.active ? 'flex' : 'none';
+  setFieldValue('extraEngravingPrice', state.extraCosts.engraving.price);
+  document.getElementById('extraStickerActive').checked = state.extraCosts.sticker.active;
+  document.getElementById('extraStickerRow').style.display = state.extraCosts.sticker.active ? 'flex' : 'none';
+  setFieldValue('extraStickerPrice', state.extraCosts.sticker.price);
+  document.getElementById('extraOtherActive').checked = state.extraCosts.other.active;
+  document.getElementById('extraOtherRow').style.display = state.extraCosts.other.active ? 'flex' : 'none';
+  setFieldValue('extraOtherLabel', state.extraCosts.other.label);
+  setFieldValue('extraOtherPrice', state.extraCosts.other.price);
+  document.getElementById('extraCostsNote').innerHTML = (state.extraCosts.engraving.active || state.extraCosts.sticker.active || state.extraCosts.other.active)
+    ? `Разом додаткових витрат: <b>${fmt(r.extraCostsTotal)} грн</b>`
+    : 'Не додається.';
+
+  // ===== Картка розрахунку: інфо-рядки =====
+  const widthVal = parseNum(document.getElementById('widthCm').value);
+  const heightVal = parseNum(document.getElementById('heightCm').value);
+  const areaM2 = (widthVal/100) * (heightVal/100); // см → м
+  document.getElementById('infoName').textContent = state.productName || '—';
+  document.getElementById('infoSize').textContent = `${fmt0(widthVal)}×${fmt0(heightVal)} см`;
+  document.getElementById('infoAreaMm').textContent = fmt(areaM2);
+  document.getElementById('infoMount').textContent = state.mount;
+  document.getElementById('infoBacklightField').style.display = state.backlight.active ? '' : 'none';
+  document.getElementById('infoBacklight').textContent = 'Контражур';
+  document.getElementById('infoLength').textContent = `${fmt(state.totalLength)} м/п`;
+  document.getElementById('infoCalcSource').textContent = state.calcSource || '—';
+
+  // Summary lines (собівартість, по статтях)
+  const activeColors = state.diffusers
+    .filter((d,i)=> (i===0 || state.diffuserActive[i]) && d.color)
+    .map(d=>d.color);
+  const diffuserDetail = state.diffusers
+    .filter((d,i)=> (i===0 || state.diffuserActive[i]) && (d.color || d.size || d.len))
+    .map(d=> `${d.color||'—'} · ${d.size||'—'} · ${fmt(d.len)} м`)
+    .join('<br>') || '—';
+  const ledTypesUsed = [...new Set(r.ledLines.filter((l,i)=> i===0 || state.diffuserActive[i]).map(l=>l.type))];
+  const ledDetail = `${ledTypesUsed.join(', ') || '—'} · ${r.systemVoltage} В · Колір: ${activeColors.join(', ') || '—'}`;
+  const psuDetail = `${r.psuFound ? r.psuTypeUsed : state.psuType} · ${state.psuVoltage} В · ${r.psuBrandResolved} · ${r.psuFound ? r.psuWattage+' Вт' : 'не підібрано'}`;
+  const cableDetail = r.cableIncluded
+    ? `${state.cableType} · ${state.cableSize}${state.cablePositionActive ? ` · вивід: ${state.cablePosition}` : ''}`
+    : 'не підібрано';
+  const materialDetail = `${fmt(r.materialArea)} м²`;
+  const millingDetail = `${fmt(r.millingLength)} м/п`;
+  const assemblyDetail = `${fmt(state.assemblyCount)} елем. × ${assemblyPriceLabel()} грн`;
+  const dimmerDetail = state.dimmerEnabled ? (r.dimmer ? `${r.dimmer.type} до ${r.dimmer.amps}А` : 'не підібрано') : 'не додається';
+  const mountHwDetail = state.mountHwType === 'Підставка акрил'
+    ? `Підставка акрил · ${fmt(state.mountHwWidth)}×${fmt(state.mountHwHeight)} см`
+    : state.mountHwType
+      ? (MOUNT_HW_NO_QTY.includes(state.mountHwType) ? state.mountHwType : `${state.mountHwType} × ${fmt(state.mountHwQty)} шт`)
+      : 'не підібрано';
+  const sealantDetail = state.mount === 'Зовнішній' ? `${fmt(r.sealantMl)} мл` : 'не застосовується';
+  const diffuserTotal = r.diffuserCosts.reduce((a,b)=>a+b,0);
+  const extraCostsParts = [];
+  if(state.extraCosts.engraving.active) extraCostsParts.push(`Гравіювання — ${fmt(r.engravingCost)} грн`);
+  if(state.extraCosts.sticker.active) extraCostsParts.push(`Наліпка — ${fmt(r.stickerCost)} грн`);
+  if(state.extraCosts.other.active) extraCostsParts.push(`${state.extraCosts.other.label || 'Інше'} — ${fmt(r.otherCost)} грн`);
+  const extraCostsDetail = extraCostsParts.length ? extraCostsParts.join('<br>') : 'не додаються';
+  const backlightDetail = state.backlight.active
+    ? `${state.backlight.material} · ${fmt(r.backlightArea)} м² × ${fmt(state.backlight.price)} грн/м² · неон по периметру: ${fmt0(r.backlightNeonLength)} м/п`
+    : 'не додається';
+
+  const lines = [
+    { label: 'Матеріал (акрил 5мм)', detail: materialDetail, amt: r.materialCost },
+    { label: 'Контражур', detail: backlightDetail, amt: r.backlightCost, show: state.backlight.active },
+    { label: 'Фрезерування', detail: millingDetail, amt: r.millingCost },
+    { label: 'Збірка (пайка)', detail: assemblyDetail, amt: r.assemblyCost },
+    { label: 'Розсіювач', detail: diffuserDetail, amt: diffuserTotal },
+    { label: 'LED-стрічка', detail: ledDetail, amt: r.ledCostTotal },
+    { label: 'Блок живлення', detail: psuDetail, amt: r.psuPrice },
+    { label: 'Кабель живлення', detail: cableDetail, amt: r.cableCost },
+    { label: 'Димер', detail: dimmerDetail, amt: r.dimmerCost },
+    { label: 'Кріплення', detail: mountHwDetail, amt: r.mountHwCost },
+    { label: 'Герметик', detail: sealantDetail, amt: r.sealantCost, show: state.mount === 'Зовнішній' },
+    { label: 'Додаткові витрати', detail: extraCostsDetail, amt: r.extraCostsTotal, show: extraCostsParts.length > 0 },
+  ];
+  document.getElementById('sumLines').innerHTML = lines
+    .filter(l => l.show !== false)
+    .map(l=>`
+    <div class="sum-line ${l.amt===0?'zero':''}">
+      <div class="head"><span class="label">${l.label}</span><span class="amt">${fmt(l.amt)} грн</span></div>
+      <div class="detail">${l.detail}</div>
+    </div>
+  `).join('');
+
+  // Фінальні ціни (без копійок)
+  document.getElementById('totalPrice').textContent = fmt0(r.manufacturingCost) + ' грн';
+  document.getElementById('fullCostPrice').textContent = fmt0(r.fullCost) + ' грн';
+  document.getElementById('priceClient').textContent = fmt0(r.recommendedPrice) + ' грн';
+  document.getElementById('priceD5').textContent = fmt0(r.priceD5) + ' грн';
+  document.getElementById('priceD10').textContent = fmt0(r.priceD10) + ' грн';
+
+  // ===== Згорнута/розгорнута картка розрахунку =====
+  document.querySelector('.price-row.main').style.display = cardRevealed ? '' : 'none';
+  document.querySelector('.price-row.client').style.display = cardRevealed ? '' : 'none';
+  document.querySelector('.price-row.d5').style.display = cardRevealed ? '' : 'none';
+  document.querySelector('.price-row.d10').style.display = cardRevealed ? '' : 'none';
+  document.getElementById('revealBtn').style.display = cardRevealed ? 'none' : '';
+  document.getElementById('revealBtn').classList.toggle('invalid', !isFormValid());
+  document.getElementById('screenshotBtn').style.display = cardRevealed ? '' : 'none';
+  document.getElementById('sendBtn').style.display = cardRevealed ? '' : 'none';
+}
+
+function assemblyPriceLabel(){
+  return ASSEMBLY_PRICE[state.mount] || ASSEMBLY_PRICE['Внутрішній'];
+}
+
+/* ============ ПОДІЇ ============ */
+document.getElementById('productName').addEventListener('input', e=> {
+  state.productName = e.target.value;
+  if(e.target.value.trim()){
+    e.target.classList.remove('input-error');
+    const statusEl = document.getElementById('sendStatus');
+    if(statusEl.textContent === 'Вкажіть назву виробу'){ statusEl.className = 'send-status'; statusEl.textContent = ''; }
+  }
+  render();
+});
+
+document.getElementById('widthCm').addEventListener('input', e=>{ state.widthCm = parseNum(e.target.value); render(); });
+document.getElementById('heightCm').addEventListener('input', e=>{ state.heightCm = parseNum(e.target.value); render(); });
+
+document.getElementById('mountToggle').addEventListener('click', e=>{
+  if(e.target.tagName !== 'BUTTON') return;
+  [...e.currentTarget.children].forEach(b=>b.classList.remove('active'));
+  e.target.classList.add('active');
+  state.mount = e.target.dataset.val;
+  // автопідбір типу БЖ за монтажем (тільки якщо не в ручному режимі БЖ)
+  state.psuType = state.mount === 'Зовнішній' ? 'IP67' : 'Пластик';
+  render();
+});
+
+document.getElementById('millingModeToggle').addEventListener('click', e=>{
+  if(e.target.tagName !== 'BUTTON') return;
+  [...e.currentTarget.children].forEach(b=>b.classList.remove('active'));
+  e.target.classList.add('active');
+  state.millingMode = e.target.dataset.val;
+  render();
+});
+
+document.getElementById('millingOutsourcePriceInput').addEventListener('input', e=>{
+  state.millingOutsourcePrice = parseNum(e.target.value) || 0;
+  state.millingOutsourceManual = true;
+  render();
+});
+
+document.getElementById('backlightShapeToggle').addEventListener('click', e=>{
+  if(e.target.tagName !== 'BUTTON') return;
+  [...e.currentTarget.children].forEach(b=>b.classList.remove('active'));
+  e.target.classList.add('active');
+  state.backlight.shape = e.target.dataset.val;
+  render();
+});
+
+['assemblyCount','mountHwQty','mountHwWidth','mountHwHeight'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', e=>{
+    state[id] = parseNum(e.target.value);
+    if(id === 'assemblyCount') assemblyCountFromSvg = false; // ручна правка — більше не "з файлу"
+    if(id !== 'assemblyCount') mountHwFromSvg = false; // ручна правка кріплення — більше не "з файлу"
+    if(id === 'mountHwQty' && (state.mountHwQty > 0)){
+      e.target.classList.remove('input-error');
+      const statusEl = document.getElementById('sendStatus');
+      if(statusEl.textContent === 'Вкажіть кількість кріплення "Дистанційне"'){ statusEl.className = 'send-status'; statusEl.textContent = ''; }
+    }
+    render();
+  });
+});
+
+document.getElementById('totalLength').addEventListener('input', e=>{
+  state.totalLength = parseNum(e.target.value);
+  // автоматично підставляємо загальну довжину в поле "Довжина" першого розсіювача
+  state.diffusers[0].len = state.totalLength;
+  // щойно введене число вважаємо "чистим" (без контражура) — при наступному
+  // render() контражур (якщо активний) буде додано зверху автоматично
+  state.backlight.appliedLength = 0;
+  // автоперехід вольтажу системи/БЖ: довжина > 8 м/п → 24В, інакше → 12В
+  applyAutoSystemVoltage();
+  buildDiffuserRows();
+  render();
+});
+
+// ============ SVG: авто-розрахунок довжини напису ============
+function parseSvgLengthToMM(str){
+  // повертає {value, unit} з рядка типу "500mm", "50cm", "12in", "500" (без одиниці)
+  if(!str) return null;
+  const m = String(str).trim().match(/^([\d.]+)\s*([a-zA-Z%]*)$/);
+  if(!m) return null;
+  const num = parseFloat(m[1]);
+  const unit = (m[2] || '').toLowerCase();
+  const factors = { mm:1, cm:10, in:25.4, pt:25.4/72, pc:25.4/6, px:25.4/96, '':1 };
+  const f = factors.hasOwnProperty(unit) ? factors[unit] : null;
+  if(f === null || isNaN(num)) return null;
+  return num * f; // у мм
+}
+
+let lastSvgRawTotalM = null;
+let lastSvgScaleInfo = '';
+let assemblyCountFromSvg = false; // true, якщо "Збірка (пайка)" підставлено автоматично з SVG-файлу
+let mountHwFromSvg = false; // true, якщо "Кріплення" підібрано автоматично з SVG-файлу (за діаметром отворів)
+
+// Значення з комірки "Літери" (з розбивки SVG) автоматично підставляється
+// в поле "Загальна довжина неону" — і при первинному розрахунку, і при ручній
+// корекції поля "Літери" (якщо авто-визначення трохи помилилось).
+function syncLettersToTotalLength(){
+  const m = parseNum(document.getElementById('svgLettersOut').value);
+  document.getElementById('totalLength').value = fmt(m);
+  state.totalLength = m;
+  state.diffusers[0].len = m;
+  // так само як і при ручному введенні — це "чисте" значення без контражура,
+  // він буде додано зверху автоматично на наступному render()
+  state.backlight.appliedLength = 0;
+  // за замовчуванням, якщо тип розсіювача ще не обрано — ставимо 6мм (лише для SVG-режиму)
+  if(!state.diffusers[0].size) state.diffusers[0].size = '6мм';
+  // автоперехід вольтажу системи/БЖ: довжина > 8 м/п → 24В, інакше → 12В
+  applyAutoSystemVoltage();
+  buildDiffuserRows();
+  render();
+}
+
+document.getElementById('svgLettersOut').addEventListener('input', syncLettersToTotalLength);
+
+// Сума периметру + отворів + літер — для порівняння з довжиною фрезерування
+function syncSvgBreakdownTotal(){
+  const p = parseNum(document.getElementById('svgPerimeterOut').value);
+  const c = parseNum(document.getElementById('svgCirclesOut').value);
+  const l = parseNum(document.getElementById('svgLettersOut').value);
+  document.getElementById('svgTotalOut').value = fmt(p + c + l);
+}
+['svgPerimeterOut','svgCirclesOut','svgLettersOut'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', syncSvgBreakdownTotal);
+});
+
+// Витягує читабельну назву виробу з імені файлу: прибирає розширення,
+// службові суфікси (_v2, _4, _final, дата тощо) і заміняє підкреслення/дефіси на пробіли.
+function productNameFromFilename(filename){
+  let base = filename.replace(/\.[a-zA-Z0-9]+$/, ''); // прибрати розширення
+  // прибрати "хвостові" службові суфікси через _ або - (числа, версії, "final", "copy" тощо)
+  base = base.replace(/([ _-](v?\d+|final|copy|копія|варіант|draft|new|old))+$/gi, '');
+  base = base.replace(/[_-]+/g, ' ').trim();
+  return base;
+}
+
+async function handleSvgFileSelected(file){
+  const note = document.getElementById('svgLengthNote');
+  if(!file) return;
+  // Назва виробу з імені файлу — тільки якщо поле ще порожнє (ручну назву не чіпаємо)
+  if(!state.productName){
+    const guessedName = productNameFromFilename(file.name);
+    if(guessedName){
+      state.productName = guessedName;
+      document.getElementById('productName').value = state.productName;
+    }
+  }
+  note.style.display = 'block';
+  note.innerHTML = 'Обробка файлу…';
+  try{
+    const text = await file.text();
+    const doc = new DOMParser().parseFromString(text, 'image/svg+xml');
+    const svgRoot = doc.querySelector('svg');
+    if(!svgRoot || doc.querySelector('parsererror')){
+      note.innerHTML = '⚠ Не вдалося прочитати SVG-файл.';
+      return;
+    }
+
+    // визначаємо масштаб: реальні width/height файлу (мм/см/дюйми) відносно viewBox
+    const viewBoxAttr = svgRoot.getAttribute('viewBox');
+    let vbWidth = null, vbHeight = null;
+    if(viewBoxAttr){
+      const parts = viewBoxAttr.trim().split(/[\s,]+/).map(Number);
+      if(parts.length === 4){ vbWidth = parts[2]; vbHeight = parts[3]; }
+    }
+    const widthMM = parseSvgLengthToMM(svgRoot.getAttribute('width'));
+    let scaleMMPerUnit = 1;
+    if(widthMM !== null && vbWidth){
+      scaleMMPerUnit = widthMM / vbWidth;
+    } else if(widthMM !== null && !vbWidth){
+      // немає viewBox — вважаємо, що координати вже у тих самих одиницях, що й width
+      scaleMMPerUnit = 1;
+    }
+    // якщо width файлу взагалі не вдалось розпізнати — залишаємо масштаб 1 (мм = user-units), з попередженням нижче
+
+    // вставляємо SVG у прихований, але прикріплений до DOM контейнер (потрібно для getTotalLength)
+    const holder = document.getElementById('svgHiddenHolder');
+    holder.innerHTML = '';
+    holder.appendChild(svgRoot.cloneNode(true));
+    const mounted = holder.querySelector('svg');
+
+    // Довжина контуру в "user-одиницях" (тих самих, що viewBox), з урахуванням ЛИШЕ явних
+    // transform-атрибутів на вкладених <g> (якщо такі є в файлі). Свідомо НЕ використовуємо
+    // getCTM() кореневого <svg> — він переводить координати в піксельний простір рендеру
+    // сторінки (мм→px браузера), що псує масштаб. Якщо жодного transform немає (типовий
+    // випадок для експорту з CorelDRAW) — довжина береться як є, без жодних спотворень.
+    function geometryLengthInRootUnits(el){
+      const localLen = el.getTotalLength ? el.getTotalLength() : 0;
+      if(!localLen) return 0;
+
+      let matrix = null;
+      let node = el;
+      while(node && node !== mounted){
+        const t = node.getAttribute && node.getAttribute('transform');
+        if(t){
+          try{
+            const m = new DOMMatrix(t);
+            matrix = matrix ? m.multiply(matrix) : m;
+          }catch(err){ /* нерозпізнаний transform — ігноруємо */ }
+        }
+        node = node.parentNode;
+      }
+      if(!matrix) return localLen; // немає жодних transform — довжина як є
+
+      const steps = Math.max(8, Math.min(400, Math.ceil(localLen)));
+      let sum = 0, prev = null;
+      for(let i=0; i<=steps; i++){
+        const raw = el.getPointAtLength(localLen * i / steps);
+        const p = matrix.transformPoint(new DOMPoint(raw.x, raw.y));
+        if(prev){ sum += Math.hypot(p.x-prev.x, p.y-prev.y); }
+        prev = p;
+      }
+      return sum;
+    }
+
+    // ===== Розбивка на 3 категорії: периметр / кружечки (отвори) / літери =====
+    // Кожен <path> ділимо на під-контури (по M/m), кожен під-контур вимірюємо окремо
+    // й класифікуємо за формою: коло (аспект bbox ≈1 і довжина/(π·діаметр) ≈1),
+    // "простий" контур із малою кількістю команд → периметр/рамка, решта → літери.
+    function classifySvgBreakdown(root){
+      let perimeterUnits = 0, circlesUnits = 0, lettersUnits = 0, lettersPartsCount = 0;
+      const circleDiametersUnits = []; // діаметри всіх виявлених круглих отворів (в одиницях root, до масштабування)
+      const cmdRe = /[MLCQAHVSTZmlcqahvstz]/g;
+
+      function measureSubpath(dStr){
+        const tempPath = document.createElementNS('http://www.w3.org/2000/svg','path');
+        tempPath.setAttribute('d', dStr);
+        root.appendChild(tempPath);
+        let len = 0, bbox = null;
+        try{ len = tempPath.getTotalLength(); bbox = tempPath.getBBox(); }catch(err){}
+        tempPath.remove();
+        if(!len) return null;
+        const w = bbox ? bbox.width : 0;
+        const h = bbox ? bbox.height : 0;
+        const cmdCount = (dStr.match(cmdRe) || []).length;
+        const aspect = (w > 0 && h > 0) ? Math.min(w,h)/Math.max(w,h) : 0;
+        const avgDiam = (w + h) / 2;
+        const circularity = avgDiam > 0 ? len / (Math.PI * avgDiam) : 0;
+        const isCircleShape = aspect >= 0.85 && circularity >= 0.85 && circularity <= 1.2;
+        return { len, maxSide: Math.max(w,h), cmdCount, isCircleShape, avgDiam };
+      }
+
+      // Класифікація йде на рівні ЦІЛОГО <path>, а не окремого підконтуру.
+      // Якщо в межах одного path є один різко більший і "простий" підконтур
+      // (рамка/периметр) на фоні дрібних кружечків — це "панель" (рамка+отвори).
+      // Якщо такого явного домінанта немає (типово для складних літер/ієрогліфів,
+      // де окремі штрихи теж можуть мати мало команд) — весь path цілком йде в "літери",
+      // без спроби ділити його штрихи по формі.
+      root.querySelectorAll('path').forEach(el=>{
+        const d = el.getAttribute('d');
+        if(!d) return;
+        const subStrings = d.match(/[Mm][^Mm]*/g) || [d];
+        const subs = subStrings.map(measureSubpath).filter(Boolean);
+        if(subs.length === 0) return;
+
+        const sorted = [...subs].sort((a,b)=>b.maxSide - a.maxSide);
+        const largest = sorted[0];
+        const second = sorted[1] ? sorted[1].maxSide : 0;
+        const isPanel = largest.maxSide >= 2.5 * Math.max(second, 1) && largest.cmdCount <= 8;
+
+        if(isPanel){
+          subs.forEach(s=>{
+            if(s === largest) perimeterUnits += s.len;
+            else if(s.isCircleShape){ circlesUnits += s.len; circleDiametersUnits.push(s.avgDiam); }
+            else perimeterUnits += s.len; // нетипова дрібна деталь панелі — до периметру про запас
+          });
+        } else {
+          // Кожен під-контур тут — окрема фізична частина літери (окремий гнутий
+          // елемент неону), яку потрібно буде спаяти/зібрати з іншими — рахуємо їх.
+          subs.forEach(s=>{ lettersUnits += s.len; lettersPartsCount++; });
+        }
+      });
+
+      root.querySelectorAll('rect, circle, ellipse, line, polyline, polygon').forEach(el=>{
+        if(typeof el.getTotalLength !== 'function') return;
+        if(el.tagName.toLowerCase() === 'rect' && vbWidth && vbHeight){
+          const rw = parseFloat(el.getAttribute('width')) || 0;
+          const rh = parseFloat(el.getAttribute('height')) || 0;
+          const rx = parseFloat(el.getAttribute('x')) || 0;
+          const ry = parseFloat(el.getAttribute('y')) || 0;
+          const coversCanvas = rx <= vbWidth*0.01 && ry <= vbHeight*0.01 &&
+                               rw >= vbWidth*0.98 && rh >= vbHeight*0.98;
+          if(coversCanvas) return; // фоновий artboard — пропускаємо
+        }
+        let len = 0;
+        try{ len = el.getTotalLength(); }catch(err){}
+        if(!len) return;
+        const tag = el.tagName.toLowerCase();
+        if(tag === 'circle' || tag === 'ellipse'){
+          circlesUnits += len;
+          let diam = 0;
+          if(tag === 'circle'){
+            diam = (parseFloat(el.getAttribute('r')) || 0) * 2;
+          } else {
+            const rx = parseFloat(el.getAttribute('rx')) || 0;
+            const ry = parseFloat(el.getAttribute('ry')) || 0;
+            diam = rx + ry; // (rx+ry) ≈ середній діаметр
+          }
+          if(diam > 0) circleDiametersUnits.push(diam);
+        }
+        else perimeterUnits += len;
+      });
+
+      return {
+        perimeterM: (perimeterUnits * scaleMMPerUnit) / 1000,
+        circlesM: (circlesUnits * scaleMMPerUnit) / 1000,
+        lettersM: (lettersUnits * scaleMMPerUnit) / 1000,
+        lettersPartsCount,
+        circleDiametersMM: circleDiametersUnits.map(d => d * scaleMMPerUnit)
+      };
+    }
+
+    // ===== Розмір вивіски (Ш×В) по bounding box реального контенту =====
+    // Фонова "підкладка" (rect на весь viewBox) вже виключається так само, як і при
+    // розрахунку довжини. Форма контуру (кругла/нестандартна) не заважає — беремо
+    // просто мінімальний прямокутник, що охоплює всі реальні контури, як і для
+    // прямокутної заготовки акрилу.
+    function computeContentBBoxInRootUnits(root){
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+      function matrixFor(el){
+        let matrix = null;
+        let node = el;
+        while(node && node !== root){
+          const t = node.getAttribute && node.getAttribute('transform');
+          if(t){
+            try{
+              const m = new DOMMatrix(t);
+              matrix = matrix ? m.multiply(matrix) : m;
+            }catch(err){ /* нерозпізнаний transform — ігноруємо */ }
+          }
+          node = node.parentNode;
+        }
+        return matrix;
+      }
+      function addPoint(x,y){
+        if(x<minX) minX=x; if(x>maxX) maxX=x;
+        if(y<minY) minY=y; if(y>maxY) maxY=y;
+      }
+      function isBackgroundRect(el){
+        if(el.tagName.toLowerCase() !== 'rect' || !vbWidth || !vbHeight) return false;
+        const rw = parseFloat(el.getAttribute('width')) || 0;
+        const rh = parseFloat(el.getAttribute('height')) || 0;
+        const rx = parseFloat(el.getAttribute('x')) || 0;
+        const ry = parseFloat(el.getAttribute('y')) || 0;
+        return rx <= vbWidth*0.01 && ry <= vbHeight*0.01 && rw >= vbWidth*0.98 && rh >= vbHeight*0.98;
+      }
+
+      root.querySelectorAll('path').forEach(el=>{
+        const len = el.getTotalLength ? el.getTotalLength() : 0;
+        if(!len) return;
+        const matrix = matrixFor(el);
+        const steps = Math.max(8, Math.min(400, Math.ceil(len)));
+        for(let i=0; i<=steps; i++){
+          const raw = el.getPointAtLength(len * i / steps);
+          const p = matrix ? matrix.transformPoint(new DOMPoint(raw.x, raw.y)) : raw;
+          addPoint(p.x, p.y);
+        }
+      });
+
+      root.querySelectorAll('rect, circle, ellipse, line, polyline, polygon').forEach(el=>{
+        if(isBackgroundRect(el)) return; // фонова підкладка — не частина вивіски
+        let bbox = null;
+        try{ bbox = el.getBBox(); }catch(err){}
+        if(!bbox || (!bbox.width && !bbox.height)) return;
+        const matrix = matrixFor(el);
+        const corners = [
+          {x:bbox.x, y:bbox.y}, {x:bbox.x+bbox.width, y:bbox.y},
+          {x:bbox.x, y:bbox.y+bbox.height}, {x:bbox.x+bbox.width, y:bbox.y+bbox.height},
+        ];
+        corners.forEach(c=>{
+          const p = matrix ? matrix.transformPoint(new DOMPoint(c.x, c.y)) : c;
+          addPoint(p.x, p.y);
+        });
+      });
+
+      if(!isFinite(minX) || !isFinite(minY) || !isFinite(maxX) || !isFinite(maxY)) return null;
+      return { width: maxX - minX, height: maxY - minY };
+    }
+
+    const breakdown = classifySvgBreakdown(mounted);
+    document.getElementById('svgBreakdownRow').style.display = 'flex';
+    document.getElementById('svgPerimeterOut').value = fmt(breakdown.perimeterM);
+    document.getElementById('svgCirclesOut').value = fmt(breakdown.circlesM);
+    document.getElementById('svgLettersOut').value = fmt(breakdown.lettersM);
+    syncSvgBreakdownTotal();
+
+    // Кількість частин, з яких складаються літери (кожен окремий підконтур —
+    // окремий елемент, який потрібно буде спаяти/зібрати) — автопідставляємо у "Збірка (пайка)".
+    state.assemblyCount = breakdown.lettersPartsCount;
+    assemblyCountFromSvg = true;
+    document.getElementById('assemblyCount').value = fmt0(state.assemblyCount);
+
+    // Розмір вивіски (Ш×В) по bounding box реального контенту — підставляємо
+    // в Ширину/Висоту ЛИШЕ якщо ці поля порожні (ручне значення не чіпаємо).
+    let svgSizeNoteHTML = '';
+    const contentBBox = computeContentBBoxInRootUnits(mounted);
+    if(contentBBox){
+      const wCm = (contentBBox.width * scaleMMPerUnit) / 10;
+      const hCm = (contentBBox.height * scaleMMPerUnit) / 10;
+      const widthEmpty = !((state.widthCm||0) > 0);
+      const heightEmpty = !((state.heightCm||0) > 0);
+      if(widthEmpty){
+        state.widthCm = Math.round(wCm * 10) / 10;
+        document.getElementById('widthCm').value = fmt(state.widthCm);
+      }
+      if(heightEmpty){
+        state.heightCm = Math.round(hCm * 10) / 10;
+        document.getElementById('heightCm').value = fmt(state.heightCm);
+      }
+      if(widthEmpty || heightEmpty){
+        const filled = [widthEmpty && 'Ширину', heightEmpty && 'Висоту'].filter(Boolean).join(' і ');
+        svgSizeNoteHTML = `<br>✓ Розмір по контуру напису: ${fmt(wCm)}×${fmt(hCm)} см — підставлено в ${filled} (поле було порожнім).`;
+      } else {
+        svgSizeNoteHTML = `<br>ℹ Розмір по контуру напису з файлу: ${fmt(wCm)}×${fmt(hCm)} см — Ширина/Висота вже заповнені вручну, не змінено.`;
+      }
+    }
+
+    // Кріплення — автопідбір за діаметром отворів у файлі:
+    // 9мм → Дистанційне (к-сть = число таких отворів), 5мм → Ліска (одиниця, кількість не рахується),
+    // отворів немає взагалі → Підставка акрил (розмір беремо з уже визначеного розміру вивіски).
+    let mountHwNoteHTML = '';
+    const TOL_MM = 1.2; // допуск на неточність трасування контуру
+    const diamsMM = breakdown.circleDiametersMM || [];
+    const count9 = diamsMM.filter(d => Math.abs(d - 9) <= TOL_MM).length;
+    const count5 = diamsMM.filter(d => Math.abs(d - 5) <= TOL_MM).length;
+    const countOther = diamsMM.length - count9 - count5;
+    if(diamsMM.length === 0){
+      state.mountHwType = 'Підставка акрил';
+      state.mountHwQty = 0;
+      state.mountHwWidth = state.widthCm || 0;
+      state.mountHwHeight = state.heightCm || 0;
+      mountHwFromSvg = true;
+      mountHwNoteHTML = '<br>✓ Отворів у файлі не знайдено — кріплення підібрано автоматично: Підставка акрил.';
+    } else if(count9 >= count5 && count9 > 0){
+      state.mountHwType = 'Дистанційне';
+      state.mountHwQty = count9;
+      mountHwFromSvg = true;
+      mountHwNoteHTML = `<br>✓ Знайдено ${count9} отвір(ів) Ø≈9мм — кріплення підібрано автоматично: Дистанційне × ${count9}.`;
+    } else if(count5 > 0){
+      state.mountHwType = 'Ліска';
+      state.mountHwQty = 0;
+      mountHwFromSvg = true;
+      mountHwNoteHTML = `<br>✓ Знайдено ${count5} отвір(ів) Ø≈5мм — кріплення підібрано автоматично: Ліска.`;
+    }
+    if(countOther > 0){
+      mountHwNoteHTML += `<br><span style="color:var(--warn, #d99)">⚠ Ще ${countOther} отвір(ів) мають інший діаметр (не 9мм і не 5мм) — перевірте кріплення вручну.</span>`;
+    }
+    document.getElementById('mountHwType').value = state.mountHwType;
+    setFieldValue('mountHwQty', state.mountHwQty);
+    setFieldValue('mountHwWidth', state.mountHwWidth);
+    setFieldValue('mountHwHeight', state.mountHwHeight);
+
+    let totalUnits = 0;
+    let countedEls = 0;
+    let skippedBackground = 0;
+    mounted.querySelectorAll('path, line, polyline, polygon, rect, circle, ellipse').forEach(el=>{
+      if(el.tagName.toLowerCase() === 'rect' && vbWidth && vbHeight){
+        // фонові rect на весь канвас (artboard/підкладка CorelDRAW) — не частина напису, пропускаємо
+        const rw = parseFloat(el.getAttribute('width')) || 0;
+        const rh = parseFloat(el.getAttribute('height')) || 0;
+        const rx = parseFloat(el.getAttribute('x')) || 0;
+        const ry = parseFloat(el.getAttribute('y')) || 0;
+        const coversCanvas = rx <= vbWidth*0.01 && ry <= vbHeight*0.01 &&
+                             rw >= vbWidth*0.98 && rh >= vbHeight*0.98;
+        if(coversCanvas){ skippedBackground++; return; }
+      }
+      if(typeof el.getTotalLength === 'function'){
+        try{
+          totalUnits += geometryLengthInRootUnits(el);
+          countedEls++;
+        }catch(err){ /* елемент без геометрії — пропускаємо */ }
+      }
+    });
+    holder.innerHTML = '';
+
+    if(countedEls === 0){
+      note.innerHTML = '⚠ У файлі не знайдено жодного контуру (path/line/polyline тощо).';
+      return;
+    }
+
+    const totalMM = totalUnits * scaleMMPerUnit;
+    const totalM = totalMM / 1000;
+
+    lastSvgRawTotalM = totalM;
+    state.calcSource = 'З файлу';
+    lastSvgScaleInfo = (widthMM !== null && vbWidth)
+      ? `масштаб визначено з файлу (${svgRoot.getAttribute('width')}), ${countedEls} контур${countedEls===1?'':countedEls<5?'и':'ів'}${skippedBackground ? `, пропущено фон: ${skippedBackground}` : ''}`
+      : `⚠ реальний розмір файлу не розпізнано, довжину пораховано «як є» — перевірте вручну, ${countedEls} контур${countedEls===1?'':countedEls<5?'и':'ів'}${skippedBackground ? `, пропущено фон: ${skippedBackground}` : ''}`;
+    note.style.display = 'block';
+    note.innerHTML = `✓ Розбито на периметр / отвори / літери · ${lastSvgScaleInfo}${svgSizeNoteHTML}${mountHwNoteHTML}`;
+    syncLettersToTotalLength();
+  }catch(err){
+    note.innerHTML = '⚠ Помилка обробки файлу: ' + (err.message || err);
+  }
+}
+
+document.getElementById('svgFileInput').addEventListener('change', (e)=>{
+  handleSvgFileSelected(e.target.files[0]);
+});
+document.getElementById('svgFileInputMode').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  // Прийшли через картку вибору режиму — відкриваємо повністю розгорнутий вигляд
+  // (не компактний), так само як і раніше, і одразу обробляємо файл.
+  compactMode = false;
+  enterManualMode();
+  handleSvgFileSelected(file);
+});
+
+document.getElementById('compactToggleBtn').addEventListener('click', ()=>{
+  compactMode = !compactMode;
+  render();
+});
+
+document.getElementById('systemVoltage').addEventListener('change', e=>{ state.systemVoltage = +e.target.value; render(); });
+document.getElementById('ledBrand').addEventListener('change', e=>{ state.ledBrand = e.target.value; render(); });
+document.getElementById('psuType').addEventListener('change', e=>{ state.psuType = e.target.value; state.psuWattageManual=null; render(); });
+document.getElementById('psuVoltage').addEventListener('change', e=>{ state.psuVoltage = +e.target.value; state.psuWattageManual=null; render(); });
+document.getElementById('psuBrand').addEventListener('change', e=>{ state.psuBrand = e.target.value; state.psuWattageManual=null; render(); });
+document.getElementById('psuManual').addEventListener('change', e=>{ state.psuManual = e.target.checked; render(); });
+document.getElementById('psuWattageSelect').addEventListener('change', e=>{ state.psuWattageManual = +e.target.value; render(); });
+document.getElementById('dimmerEnabled').addEventListener('change', e=>{ state.dimmerEnabled = e.target.checked; render(); });
+document.getElementById('dimmerManual').addEventListener('change', e=>{ state.dimmerManual = e.target.checked; render(); });
+document.getElementById('dimmerManualSelect').addEventListener('change', e=>{ state.dimmerManualAmps = +e.target.value; render(); });
+document.getElementById('cableType').addEventListener('change', e=>{ state.cableType = e.target.value; state.cableSize=''; state.cableManual = true; render(); });
+document.getElementById('cableSize').addEventListener('change', e=>{ state.cableSize = e.target.value; state.cableManual = true; render(); });
+document.getElementById('cablePositionActive').addEventListener('change', e=>{ state.cablePositionActive = e.target.checked; render(); });
+document.getElementById('cablePosition').addEventListener('change', e=>{ state.cablePosition = e.target.value; render(); });
+document.getElementById('mountHwType').addEventListener('change', e=>{
+  state.mountHwType = e.target.value;
+  mountHwFromSvg = false;
+  if(state.mountHwType){
+    e.target.classList.remove('input-error');
+    const statusEl = document.getElementById('sendStatus');
+    if(statusEl.textContent === 'Оберіть тип кріплення'){ statusEl.className = 'send-status'; statusEl.textContent = ''; }
+  }
+  render();
+});
+
+document.getElementById('materialPriceInput').addEventListener('input', e=>{
+  MATERIAL_PRICE_5MM = parseNum(e.target.value) || 0;
+  render();
+});
+
+document.getElementById('backlightToggle').addEventListener('click', e=>{
+  if(e.target.tagName !== 'BUTTON') return;
+  state.backlight.active = e.target.dataset.val === 'on';
+  render();
+});
+document.getElementById('backlightMaterial').addEventListener('change', e=>{
+  state.backlight.material = e.target.value;
+  state.backlight.price = BACKLIGHT_PRICES[e.target.value] ?? state.backlight.price;
+  render();
+});
+document.getElementById('backlightPriceInput').addEventListener('input', e=>{
+  state.backlight.price = parseNum(e.target.value) || 0;
+  render();
+});
+document.getElementById('millingPriceInput').addEventListener('input', e=>{
+  MILLING_PRICE = parseNum(e.target.value) || 0;
+  render();
+});
+
+document.getElementById('extraEngravingActive').addEventListener('change', e=>{ state.extraCosts.engraving.active = e.target.checked; render(); });
+document.getElementById('extraStickerActive').addEventListener('change', e=>{ state.extraCosts.sticker.active = e.target.checked; render(); });
+document.getElementById('extraEngravingPrice').addEventListener('input', e=>{ state.extraCosts.engraving.price = parseNum(e.target.value); render(); });
+document.getElementById('extraStickerPrice').addEventListener('input', e=>{ state.extraCosts.sticker.price = parseNum(e.target.value); render(); });
+document.getElementById('extraOtherActive').addEventListener('change', e=>{ state.extraCosts.other.active = e.target.checked; render(); });
+document.getElementById('extraOtherLabel').addEventListener('input', e=>{ state.extraCosts.other.label = e.target.value; render(); });
+document.getElementById('extraOtherPrice').addEventListener('input', e=>{ state.extraCosts.other.price = parseNum(e.target.value); render(); });
+
+document.getElementById('screenshotBtn').addEventListener('click', async ()=>{
+  const btn = document.getElementById('screenshotBtn');
+  const target = document.getElementById('summaryPanel');
+  if (typeof html2canvas === 'undefined'){
+    alert('Не вдалося завантажити модуль скріншота. Перевірте інтернет-з’єднання і спробуйте ще раз.');
+    return;
+  }
+  const originalLabel = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = 'Зберігаю...';
+  // html2canvas не підтримує CSS mask/mask-composite, через що анімована
+  // градієнтна рамка картки (::before) рендериться суцільною заливкою.
+  // На час знімку тимчасово ховаємо цю рамку та підміняємо її звичайною
+  // однотонною, щоб картка виглядала так само, як на екрані.
+  const fixStyle = document.createElement('style');
+  fixStyle.id = 'screenshotFixStyle';
+  fixStyle.textContent = `
+    #summaryPanel::before{ display:none !important; }
+    #summaryPanel{ border-color: var(--line) !important; }
+  `;
+  document.head.appendChild(fixStyle);
+  try{
+    const canvas = await html2canvas(target, {
+      backgroundColor: null,
+      scale: Math.min(3, (window.devicePixelRatio || 1) * 2),
+      useCORS: true
+    });
+    canvas.toBlob(blob=>{
+      if (!blob){ btn.disabled=false; btn.innerHTML=originalLabel; return; }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const name = (document.getElementById('productName').value || 'Розрахунок').trim() || 'Розрахунок';
+      const stamp = new Date().toISOString().slice(0,10);
+      a.href = url;
+      a.download = `NeonSpace_${name}_${stamp}.png`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url), 2000);
+      btn.disabled = false;
+      btn.innerHTML = originalLabel;
+    }, 'image/png');
+  }catch(err){
+    console.error(err);
+    alert('Не вдалося зберегти скріншот.');
+    btn.disabled = false;
+    btn.innerHTML = originalLabel;
+  }finally{
+    fixStyle.remove();
+  }
+});
+
+document.getElementById('resetBtn').addEventListener('click', ()=>{
+  state = JSON.parse(JSON.stringify(DEFAULTS));
+  cardRevealed = false;
+  compactMode = true;
+  document.getElementById('productName').value = state.productName;
+  document.getElementById('productName').classList.remove('input-error');
+  document.getElementById('mountHwType').classList.remove('input-error');
+  document.getElementById('mountHwQty').classList.remove('input-error');
+  document.getElementById('sendStatus').className = 'send-status';
+  document.getElementById('sendStatus').textContent = '';
+  document.getElementById('widthCm').value = '';
+  document.getElementById('heightCm').value = '';
+  document.getElementById('svgFileInput').value = '';
+  lastSvgRawTotalM = null;
+  lastSvgScaleInfo = '';
+  assemblyCountFromSvg = false;
+  mountHwFromSvg = false;
+  const svgNote = document.getElementById('svgLengthNote');
+  svgNote.style.display = 'none';
+  svgNote.innerHTML = '';
+  document.getElementById('svgBreakdownRow').style.display = 'none';
+  document.getElementById('svgPerimeterOut').value = '0';
+  document.getElementById('svgCirclesOut').value = '0';
+  document.getElementById('svgLettersOut').value = '0';
+  document.getElementById('svgTotalOut').value = '0';
+  [...document.getElementById('mountToggle').children].forEach(b=>{
+    b.classList.toggle('active', b.dataset.val === state.mount);
+  });
+  [...document.getElementById('backlightShapeToggle').children].forEach(b=>{
+    b.classList.toggle('active', b.dataset.val === state.backlight.shape);
+  });
+  buildDiffuserRows();
+  render();
+});
+
+/* Спільна функція відправки заявки — використовується і кнопкою "Відправити заявку",
+   і кнопкою "Рекомендована ціна" (яка також розгортає картку). */
+async function submitApplication(btn){
+  const statusEl = document.getElementById('sendStatus');
+  statusEl.className = 'send-status';
+  statusEl.textContent = '';
+
+  if(!SHEET_WEBHOOK_URL || SHEET_WEBHOOK_URL.includes('ВСТАВ_СЮДИ')){
+    statusEl.textContent = 'Підключення до таблиці ще не налаштоване.';
+    statusEl.classList.add('err');
+    return;
+  }
+
+  const r = calculate();
+  const diffusersInfo = state.diffusers
+    .filter(d => (d.len||0) > 0)
+    .map(d => `${d.color||'-'} ${d.size||'-'} ${d.len}м/п`)
+    .join('; ');
+
+  const payload = {
+    timestamp: new Date().toLocaleString('uk-UA'),
+    sender: 'Pavlo', // Відправник — зафіксовано для цієї версії калькулятора
+    calcSource: state.calcSource || '-',
+    productName: state.productName || '',
+    sizeCm: `${fmt(state.widthCm||0)} / ${fmt(state.heightCm||0)}`,
+    backlightInfo: state.backlight.active
+      ? `${state.backlight.material} / ${state.backlight.shape} / ${fmt0(r.backlightNeonLength)} м/п`
+      : 'Неонова вивіска',
+    mount: state.mount,
+    materialMilling: `${fmt(r.materialArea)} м² / ${fmt(r.millingLength)} м/п`,
+    assemblyCount: state.assemblyCount || 0,
+    diffusers: diffusersInfo,
+    systemVoltageV: r.systemVoltage,
+    psuVoltageWattage: `${state.psuVoltage} / ${r.psuWattage || '-'}`,
+    psuTypeBrand: `${r.psuFound ? r.psuTypeUsed : state.psuType} / ${r.psuBrandResolved || state.psuBrand}`,
+    dimmer: state.dimmerEnabled ? (r.dimmer ? r.dimmer.amps + 'A' : 'так') : 'ні',
+    cableSizeType: r.cableIncluded ? `${state.cableSize} / ${state.cableType}` : '-',
+    cablePosition: (r.cableIncluded && state.cablePositionActive) ? state.cablePosition : '-',
+    mountHw: state.mountHwType ? `${state.mountHwType} / ${fmt(state.mountHwQty)}` : '-',
+    manufacturingCostUAH: Math.round(r.manufacturingCost),
+    fullCostUAH: Math.round(r.fullCost),
+    recommendedPriceUAH: Math.round(r.recommendedPrice),
+    priceD5UAH: Math.round(r.priceD5),
+    priceD10UAH: Math.round(r.priceD10),
+  };
+
+  btn.disabled = true;
+  const originalLabel = btn.innerHTML;
+  btn.innerHTML = 'Надсилаємо...';
+
+  try{
+    await fetch(SHEET_WEBHOOK_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload)
+    });
+    statusEl.textContent = '✓ Заявку надіслано';
+    statusEl.classList.add('ok');
+  }catch(err){
+    console.error(err);
+    statusEl.textContent = 'Помилка відправки. Перевірте з’єднання.';
+    statusEl.classList.add('err');
+  }finally{
+    btn.disabled = false;
+    btn.innerHTML = originalLabel;
+  }
+}
+
+/* Перевірка обов'язкового поля "Назва виробу" перед відправкою заявки */
+function validateProductName(){
+  const input = document.getElementById('productName');
+  const statusEl = document.getElementById('sendStatus');
+  if(!state.productName || !state.productName.trim()){
+    statusEl.className = 'send-status err';
+    statusEl.textContent = 'Вкажіть назву виробу';
+    input.classList.add('input-error');
+    input.focus();
+    return false;
+  }
+  input.classList.remove('input-error');
+  return true;
+}
+
+function validateMountHw(){
+  const typeInput = document.getElementById('mountHwType');
+  const qtyInput = document.getElementById('mountHwQty');
+  const statusEl = document.getElementById('sendStatus');
+  qtyInput.classList.remove('input-error');
+  typeInput.classList.remove('input-error');
+
+  if(!state.mountHwType){
+    statusEl.className = 'send-status err';
+    statusEl.textContent = 'Оберіть тип кріплення';
+    typeInput.classList.add('input-error');
+    typeInput.focus();
+    return false;
+  }
+  if(state.mountHwType === 'Дистанційне' && !(state.mountHwQty > 0)){
+    statusEl.className = 'send-status err';
+    statusEl.textContent = 'Вкажіть кількість кріплення "Дистанційне"';
+    qtyInput.classList.add('input-error');
+    qtyInput.focus();
+    return false;
+  }
+  return true;
+}
+
+function validateDiffuserColors(){
+  const statusEl = document.getElementById('sendStatus');
+  const rows = document.querySelectorAll('.dColor');
+  let firstBad = null;
+  rows.forEach(el=>{
+    const i = +el.dataset.i;
+    const active = i === 0 || state.diffuserActive[i];
+    if(active && !state.diffusers[i].color){
+      el.classList.add('input-error');
+      if(!firstBad) firstBad = el;
+    } else {
+      el.classList.remove('input-error');
+    }
+  });
+  if(firstBad){
+    statusEl.className = 'send-status err';
+    statusEl.textContent = 'Оберіть колір стрічки';
+    firstBad.focus();
+    return false;
+  }
+  return true;
+}
+
+function isFormValid(){
+  const nameOk = !!(state.productName && state.productName.trim());
+  const mountTypeOk = !!state.mountHwType;
+  const mountQtyOk = state.mountHwType !== 'Дистанційне' || (state.mountHwQty > 0);
+  const colorsOk = state.diffusers.every((d,i)=> !(i===0 || state.diffuserActive[i]) || !!d.color);
+  return nameOk && mountTypeOk && mountQtyOk && colorsOk;
+}
+
+function validateForm(){
+  // Порядок перевірок відповідає порядку полів у формі
+  if(!validateProductName()) return false;
+  if(!validateDiffuserColors()) return false;
+  if(!validateMountHw()) return false;
+  return true;
+}
+
+document.getElementById('sendBtn').addEventListener('click', ()=>{
+  if(!validateForm()) return;
+  submitApplication(document.getElementById('sendBtn'));
+});
+
+document.getElementById('revealBtn').addEventListener('click', ()=>{
+  if(!validateForm()) return;
+  cardRevealed = true;
+  render();
+  submitApplication(document.getElementById('sendBtn'));
+});
+
+/* ============ ВИБІР РЕЖИМУ: файл vs вручну ============ */
+function enterManualMode(){
+  document.getElementById('heroModeChoice').style.display = 'none';
+  document.getElementById('mainContent').style.display = 'block';
+}
+document.getElementById('manualModeBtn').addEventListener('click', ()=>{
+  state.calcSource = 'Вручну';
+  compactMode = true;
+  enterManualMode();
+  render();
+});
+document.getElementById('backToModeBtn').addEventListener('click', ()=>{
+  document.getElementById('mainContent').style.display = 'none';
+  document.getElementById('heroModeChoice').style.display = 'flex';
+  document.querySelector('.hero').style.display = '';
+});
+
+/* ============ ІНІЦІАЛІЗАЦІЯ ============ */
+// Публікуємо render() для раннього обробника кнопок режиму (на випадок помилки нижче за текстом файлу).
+window.__fullRenderReady = render;
+try {
+  buildDiffuserRows();
+  render();
+} catch(initErr){
+  console.error('Помилка ініціалізації калькулятора:', initErr);
+}
+</script>
+</body>
+</html>
